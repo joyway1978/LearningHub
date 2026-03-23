@@ -41,7 +41,7 @@ export function useMaterialDetail(materialId: number | string): UseMaterialDetai
     setError(null);
 
     try {
-      const response = await api.get<Material>(`/api/v1/materials/${materialId}`);
+      const response = await api.get<Material>(`/materials/${materialId}`);
 
       setMaterial(response);
       setIsLiked(response.is_liked_by_me || false);
@@ -95,7 +95,7 @@ export function useMaterialDetail(materialId: number | string): UseMaterialDetai
 
     try {
       const response = await api.post<LikeToggleResponse>(
-        `/api/v1/materials/${materialId}/like`
+        `/materials/${materialId}/like`
       );
 
       setIsLiked(response.liked);

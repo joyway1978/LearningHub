@@ -139,7 +139,7 @@ export function useMaterials(options: UseMaterialsOptions = {}): UseMaterialsRet
       if (search) params.set('search', search);
 
       const response = await api.get<PaginatedResponse<Material>>(
-        `/api/v1/materials?${params.toString()}`
+        `/materials?${params.toString()}`
       );
 
       setMaterials(response.items);

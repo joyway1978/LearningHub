@@ -234,7 +234,7 @@ export function useUpload(): UseUploadReturn {
 
       // 上传文件
       const response = await uploadFile<Material>(
-        '/api/v1/upload',
+        '/upload',
         formData,
         (progress) => {
           setUploadProgress(progress);

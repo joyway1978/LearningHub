@@ -63,13 +63,13 @@ function getFileTypeLabel(fileType: string): string {
 
 // 获取流式URL
 function getStreamUrl(materialId: number): string {
-  const baseURL = process.env.NEXT_PUBLIC_API_URL || '';
+  const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   return `${baseURL}/api/v1/materials/${materialId}/stream`;
 }
 
 // 获取PDF查看URL
 function getPDFUrl(materialId: number): string {
-  const baseURL = process.env.NEXT_PUBLIC_API_URL || '';
+  const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   return `${baseURL}/api/v1/materials/${materialId}/stream`;
 }
 
