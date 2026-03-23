@@ -1,92 +1,294 @@
-# learn_ai_hub
+# AI Learning Platform - AI教学展示平台
 
+一个功能完整的AI教学展示平台，支持视频和PDF课件的浏览、上传、点赞和分享。
 
+## 功能特性
 
-## Getting started
+- **用户认证系统**: 注册、登录、JWT Token认证
+- **课件管理**: 支持视频(mp4, webm)和PDF文件的上传和展示
+- **浏览功能**: 课件列表、详情查看、缩略图展示
+- **互动功能**: 点赞、浏览量统计(10分钟内重复浏览去重)
+- **后台管理**: 定时清理任务、系统监控
+- **响应式设计**: 支持桌面和移动设备
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## 技术栈
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+### 前端
+- **Next.js 14** - React框架
+- **TypeScript** - 类型安全
+- **Tailwind CSS** - 样式框架
+- **Axios** - HTTP客户端
 
-## Add your files
+### 后端
+- **FastAPI** - Python异步Web框架
+- **SQLAlchemy 2.0** - ORM数据库操作
+- **MySQL 8.0** - 关系型数据库
+- **MinIO** - 对象存储服务
+- **JWT** - 用户认证
+- **APScheduler** - 定时任务调度
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+### 部署
+- **Docker** - 容器化部署
+- **Docker Compose** - 多服务编排
+
+## 快速开始
+
+### 环境要求
+
+- Docker >= 20.10
+- Docker Compose >= 2.0
+- Git
+
+### 安装步骤
+
+1. **克隆仓库**
+
+```bash
+git clone <repository-url>
+cd learn_ai_hub
+```
+
+2. **配置环境变量**
+
+```bash
+cp .env.example .env
+# 编辑 .env 文件，配置必要的参数
+```
+
+3. **启动服务**
+
+```bash
+docker-compose up -d
+```
+
+4. **访问应用**
+
+- 前端: http://localhost:3000
+- 后端API: http://localhost:8000
+- API文档: http://localhost:8000/docs
+- MinIO控制台: http://localhost:9001
+
+### 使用 Makefile (可选)
+
+```bash
+# 启动所有服务
+make up
+
+# 停止所有服务
+make down
+
+# 查看日志
+make logs
+
+# 运行测试
+make test
+
+# 数据库迁移
+make migrate
+```
+
+## 使用说明
+
+### 用户注册和登录
+
+1. 访问 http://localhost:3000/register 注册账号
+2. 使用注册的邮箱和密码登录
+3. 登录后会自动跳转到课件列表页
+
+### 上传课件
+
+1. 点击"上传课件"按钮
+2. 选择文件(支持视频和PDF)
+3. 填写标题和描述
+4. 等待上传完成
+
+### 浏览课件
+
+1. 在课件列表页浏览所有课件
+2. 点击课件卡片查看详情
+3. 支持按类型筛选和排序
+
+### 点赞功能
+
+1. 在课件详情页点击点赞按钮
+2. 再次点击取消点赞
+3. 点赞数会实时更新
+
+## 项目结构
 
 ```
-cd existing_repo
-git remote add origin https://git.intra.weibo.com/weibo_rd/weibo_rd_atom/learn_ai_hub.git
-git branch -M master
-git push -uf origin master
+learn_ai_hub/
+├── backend/                    # 后端服务
+│   ├── app/
+│   │   ├── core/              # 核心模块
+│   │   │   ├── security.py    # JWT认证
+│   │   │   ├── storage.py     # MinIO存储
+│   │   │   ├── tasks.py       # 异步任务
+│   │   │   └── scheduler.py   # 定时任务
+│   │   ├── crud/              # 数据库操作
+│   │   ├── dependencies/      # 依赖注入
+│   │   ├── models/            # 数据模型
+│   │   ├── routers/           # API路由
+│   │   ├── schemas/           # Pydantic模型
+│   │   ├── services/          # 业务逻辑
+│   │   ├── config.py          # 配置管理
+│   │   ├── database.py        # 数据库连接
+│   │   └── main.py            # 应用入口
+│   ├── alembic/               # 数据库迁移
+│   ├── tests/                 # 测试文件
+│   ├── Dockerfile
+│   └── requirements.txt
+├── frontend/                   # 前端服务
+│   ├── src/
+│   │   ├── app/               # Next.js App Router
+│   │   │   ├── login/         # 登录页
+│   │   │   ├── register/      # 注册页
+│   │   │   ├── materials/     # 课件列表
+│   │   │   ├── upload/        # 上传页
+│   │   │   └── material/      # 课件详情
+│   │   ├── components/        # 组件
+│   │   ├── hooks/             # 自定义Hooks
+│   │   ├── lib/               # 工具函数
+│   │   └── types/             # TypeScript类型
+│   ├── public/                # 静态资源
+│   ├── Dockerfile
+│   └── package.json
+├── docs/                       # 文档
+│   ├── API.md                 # API文档
+│   ├── DEPLOYMENT.md          # 部署指南
+│   ├── DESIGN.md              # 设计文档
+│   └── TEST_PLAN.md           # 测试计划
+├── docker-compose.yml          # Docker编排配置
+├── .env.example               # 环境变量模板
+├── .gitignore
+├── Makefile                   # 常用命令
+└── README.md                  # 项目说明
 ```
 
-## Integrate with your tools
+## API文档
 
-- [ ] [Set up project integrations](https://git.intra.weibo.com/weibo_rd/weibo_rd_atom/learn_ai_hub/-/settings/integrations)
+详细的API文档请查看 [docs/API.md](docs/API.md)
 
-## Collaborate with your team
+主要API端点:
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+| 端点 | 方法 | 描述 |
+|------|------|------|
+| `/api/v1/auth/register` | POST | 用户注册 |
+| `/api/v1/auth/login` | POST | 用户登录 |
+| `/api/v1/auth/me` | GET | 获取当前用户信息 |
+| `/api/v1/materials` | GET | 获取课件列表 |
+| `/api/v1/materials/{id}` | GET | 获取课件详情 |
+| `/api/v1/materials/{id}` | DELETE | 删除课件 |
+| `/api/v1/materials/{id}/like` | POST | 点赞/取消点赞 |
+| `/api/v1/upload` | POST | 上传文件 |
+| `/api/v1/upload/status/{id}` | GET | 查询上传状态 |
+| `/api/v1/admin/cleanup` | POST | 手动清理(管理员) |
 
-## Test and Deploy
+## 部署指南
 
-Use the built-in continuous integration in GitLab.
+生产环境部署请参考 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+## 测试
 
-***
+### 后端测试
 
-# Editing this README
+```bash
+cd backend
+pytest --cov=app tests/
+```
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### 前端测试
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+```bash
+cd frontend
+npm test
+```
 
-## Name
-Choose a self-explaining name for your project.
+## 环境变量
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+### 数据库配置
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+| 变量名 | 说明 | 默认值 |
+|--------|------|--------|
+| MYSQL_ROOT_PASSWORD | MySQL root密码 | rootpassword |
+| MYSQL_DATABASE | 数据库名 | ai_learning |
+| MYSQL_USER | 数据库用户 | app_user |
+| MYSQL_PASSWORD | 数据库密码 | app_password |
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+### MinIO配置
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+| 变量名 | 说明 | 默认值 |
+|--------|------|--------|
+| MINIO_ROOT_USER | MinIO用户名 | minioadmin |
+| MINIO_ROOT_PASSWORD | MinIO密码 | minioadmin |
+| MINIO_BUCKET_NAME | 存储桶名 | materials |
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+### 后端配置
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+| 变量名 | 说明 | 默认值 |
+|--------|------|--------|
+| SECRET_KEY | JWT密钥 | your-secret-key-change-in-production |
+| ALGORITHM | JWT算法 | HS256 |
+| ACCESS_TOKEN_EXPIRE_MINUTES | Token过期时间(分钟) | 30 |
+| ALLOWED_ORIGINS | 允许的跨域来源 | http://localhost:3000 |
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+### 前端配置
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+| 变量名 | 说明 | 默认值 |
+|--------|------|--------|
+| NEXT_PUBLIC_API_URL | API地址 | http://localhost:8000 |
+| API_URL | 服务端API地址 | http://backend:8000 |
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+## 开发指南
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+### 本地开发
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+1. **启动数据库和存储服务**
 
-## License
-For open source projects, say how it is licensed.
+```bash
+docker-compose up -d mysql minio
+```
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+2. **启动后端开发服务器**
+
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+3. **启动前端开发服务器**
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 数据库迁移
+
+```bash
+cd backend
+alembic revision --autogenerate -m "描述"
+alembic upgrade head
+```
+
+## 贡献指南
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 创建 Pull Request
+
+## 许可证
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+
+## 联系方式
+
+如有问题或建议，欢迎提交 Issue 或 Pull Request。
+
+---
+
+**注意**: 生产环境部署前，请务必修改默认的密码和密钥配置。

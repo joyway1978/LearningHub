@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Design System Colors */
+  --color-primary: #1a1a2e;
+  --color-primary-hover: #2d2d44;
+  --color-accent: #f59e0b;
+  --color-accent-hover: #d97706;
+  --color-surface: #ffffff;
+  --color-background: #fafaf9;
+  --color-border: #e7e5e4;
+  --color-text-primary: #1c1917;
+  --color-text-secondary: #78716c;
+  --color-text-muted: #a8a29e;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-text-primary font-sans;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans font-semibold tracking-tight;
+  }
+
+  code, pre {
+    @apply font-mono;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .font-feature-normal {
+    font-feature-settings: normal;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Selection color */
+::selection {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: var(--color-text-primary);
+}
+
+/* Focus outline */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}

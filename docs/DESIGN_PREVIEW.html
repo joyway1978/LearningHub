@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI教学展示平台 - 设计系统预览</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* 主色 */
+            --color-primary: #1a1a2e;
+            --color-primary-light: #2d2d44;
+            
+            /* 强调色 */
+            --color-accent: #f59e0b;
+            --color-accent-hover: #d97706;
+            
+            /* 中性色 */
+            --color-bg: #fafaf9;
+            --color-surface: #ffffff;
+            --color-border: #e7e5e4;
+            --color-text-primary: #1c1917;
+            --color-text-secondary: #78716c;
+            --color-text-muted: #a8a29e;
+            
+            /* 语义色 */
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-error: #ef4444;
+            
+            /* 间距 */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 16px;
+            --space-4: 24px;
+            --space-5: 32px;
+            --space-6: 48px;
+            --space-7: 64px;
+            
+            /* 字体 */
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            
+            /* 圆角 */
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            
+            /* 阴影 */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-sans);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-5);
+        }
+        
+        /* Header */
+        .header {
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            padding: var(--space-4) 0;
+            margin-bottom: var(--space-6);
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--color-primary);
+            letter-spacing: -0.02em;
+        }
+        
+        .header p {
+            color: var(--color-text-secondary);
+            margin-top: var(--space-1);
+        }
+        
+        /* Sections */
+        .section {
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            padding: var(--space-5);
+            margin-bottom: var(--space-5);
+            border: 1px solid var(--color-border);
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: var(--space-4);
+            color: var(--color-text-primary);
+            letter-spacing: -0.01em;
+        }
+        
+        /* Color Palette */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-3);
+            margin-top: var(--space-4);
+        }
+        
+        .color-swatch {
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--color-border);
+        }
+        
+        .color-preview {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .color-info {
+            padding: var(--space-3);
+            background: var(--color-bg);
+        }
+        
+        .color-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .color-hex {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-top: var(--space-1);
+        }
+        
+        /* Typography */
+        .type-scale {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+        
+        .type-item {
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-3);
+            padding-bottom: var(--space-3);
+            border-bottom: 1px solid var(--color-border);
+        }
+        
+        .type-item:last-child {
+            border-bottom: none;
+        }
+        
+        .type-label {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--color-text-muted);
+            width: 80px;
+            flex-shrink: 0;
+        }
+        
+        .type-example {
+            color: var(--color-text-primary);
+        }
+        
+        .h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
+        .h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
+        .h3 { font-size: 18px; font-weight: 600; }
+        .body { font-size: 16px; font-weight: 400; }
+        .small { font-size: 14px; font-weight: 400; }
+        .caption { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); }
+        
+        /* Spacing */
+        .spacing-scale {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+        
+        .space-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        
+        .space-visual {
+            background: var(--color-accent);
+            border-radius: var(--radius-sm);
+        }
+        
+        .space-info {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--color-text-secondary);
+        }
+        
+        /* Components */
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-4);
+        }
+        
+        .component-demo {
+            padding: var(--space-4);
+            background: var(--color-bg);
+            border-radius: var(--radius-md);
+        }
+        
+        .component-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: var(--space-3);
+        }
+        
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: 10px 16px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 150ms ease-out;
+        }
+        
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--color-primary-light);
+        }
+        
+        .btn-accent {
+            background: var(--color-accent);
+            color: white;
+        }
+        
+        .btn-accent:hover {
+            background: var(--color-accent-hover);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--color-bg);
+        }
+        
+        .btn-ghost {
+            background: transparent;
+            color: var(--color-text-secondary);
+        }
+        
+        .btn-ghost:hover {
+            color: var(--color-text-primary);
+            background: var(--color-bg);
+        }
+        
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
+            overflow: hidden;
+        }
+        
+        .card-thumbnail {
+            aspect-ratio: 16/9;
+            background: linear-gradient(135deg, #2d2d44 0%, #1a1a2e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+        }
+        
+        .card-content {
+            padding: var(--space-3);
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: var(--space-1);
+        }
+        
+        .card-meta {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            display: flex;
+            gap: var(--space-3);
+            align-items: center;
+        }
+        
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: var(--space-1);
+        }
+        
+        .stat-icon {
+            color: var(--color-accent);
+        }
+        
+        /* Input */
+        .input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-family: var(--font-sans);
+            transition: border-color 150ms ease-out;
+        }
+        
+        .input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+        
+        /* Mockup */
+        .mockup-browser {
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .mockup-header {
+            background: var(--color-bg);
+            padding: var(--space-2) var(--space-3);
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .mockup-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--color-border);
+        }
+        
+        .mockup-content {
+            padding: var(--space-4);
+        }
+        
+        .mockup-nav {
+            display: flex;
+            gap: var(--space-4);
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-3);
+            border-bottom: 1px solid var(--color-border);
+        }
+        
+        .nav-item {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+        
+        .nav-item.active {
+            color: var(--color-text-primary);
+            font-weight: 500;
+        }
+        
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-3);
+        }
+        
+        @media (max-width: 768px) {
+            .video-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>AI教学展示平台</h1>
+            <p>设计系统预览 · 专业简洁的企业风格</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Color Palette -->
+        <div class="section">
+            <h2 class="section-title">色彩系统</h2>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #1a1a2e;">
+                        <span style="color: white; font-weight: 500;">主色</span>
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">深靛蓝</div>
+                        <div class="color-hex">#1a1a2e</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #f59e0b;">
+                        <span style="color: white; font-weight: 500;">强调</span>
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">暖琥珀</div>
+                        <div class="color-hex">#f59e0b</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #fafaf9; border-right: 1px solid #e7e5e4;">
+                        <span style="color: #1c1917; font-weight: 500;">背景</span>
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">暖灰白</div>
+                        <div class="color-hex">#fafaf9</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #ffffff; border-right: 1px solid #e7e5e4;">
+                        <span style="color: #1c1917; font-weight: 500;">表面</span>
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">纯白</div>
+                        <div class="color-hex">#ffffff</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #10b981;">
+                        <span style="color: white; font-weight: 500;">成功</span>
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">翠绿</div>
+                        <div class="color-hex">#10b981</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #ef4444;">
+                        <span style="color: white; font-weight: 500;">错误</span>
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">红色</div>
+                        <div class="color-hex">#ef4444</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Typography -->
+        <div class="section">
+            <h2 class="section-title">字体系统 · Inter + JetBrains Mono</h2>
+            <div class="type-scale">
+                <div class="type-item">
+                    <span class="type-label">H1</span>
+                    <span class="type-example h1">AI教学展示平台</span>
+                </div>
+                <div class="type-item">
+                    <span class="type-label">H2</span>
+                    <span class="type-example h2">课件列表</span>
+                </div>
+                <div class="type-item">
+                    <span class="type-label">H3</span>
+                    <span class="type-example h3">深入理解Transformer架构</span>
+                </div>
+                <div class="type-item">
+                    <span class="type-label">Body</span>
+                    <span class="type-example body">这是一个关于深度学习核心概念的教学视频，适合有一定基础的开发者观看。</span>
+                </div>
+                <div class="type-item">
+                    <span class="type-label">Small</span>
+                    <span class="type-example small">上传于 2024年3月15日 · 1.2万次观看</span>
+                </div>
+                <div class="type-item">
+                    <span class="type-label">Caption</span>
+                    <span class="type-example caption">LIKE COUNT</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Spacing -->
+        <div class="section">
+            <h2 class="section-title">间距系统 · 8px 基础单位</h2>
+            <div class="spacing-scale">
+                <div class="space-item">
+                    <div class="space-visual" style="width: 4px; height: 4px;"></div>
+                    <span class="space-info">4px (0.5×)</span>
+                </div>
+                <div class="space-item">
+                    <div class="space-visual" style="width: 8px; height: 8px;"></div>
+                    <span class="space-info">8px (1×)</span>
+                </div>
+                <div class="space-item">
+                    <div class="space-visual" style="width: 16px; height: 16px;"></div>
+                    <span class="space-info">16px (2×)</span>
+                </div>
+                <div class="space-item">
+                    <div class="space-visual" style="width: 24px; height: 24px;"></div>
+                    <span class="space-info">24px (3×)</span>
+                </div>
+                <div class="space-item">
+                    <div class="space-visual" style="width: 32px; height: 32px;"></div>
+                    <span class="space-info">32px (4×)</span>
+                </div>
+                <div class="space-item">
+                    <div class="space-visual" style="width: 48px; height: 48px;"></div>
+                    <span class="space-info">48px (6×)</span>
+                </div>
+                <div class="space-item">
+                    <div class="space-visual" style="width: 64px; height: 64px;"></div>
+                    <span class="space-info">64px (8×)</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Components -->
+        <div class="section">
+            <h2 class="section-title">组件展示</h2>
+            <div class="component-grid">
+                <div class="component-demo">
+                    <div class="component-label">Buttons</div>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <button class="btn btn-primary">主要按钮</button>
+                        <button class="btn btn-accent">👍 点赞 (128)</button>
+                        <button class="btn btn-secondary">次要按钮</button>
+                        <button class="btn btn-ghost">幽灵按钮</button>
+                    </div>
+                </div>
+                
+                <div class="component-demo">
+                    <div class="component-label">Input</div>
+                    <input class="input" type="text" placeholder="搜索课件..." value="">
+                    <input class="input" type="text" placeholder="" value="深入理解Transformer架构" style="margin-top: 12px;">
+                </div>
+                
+                <div class="component-demo">
+                    <div class="component-label">Video Card</div>
+                    <div class="card" style="max-width: 280px;">
+                        <div class="card-thumbnail">▶</div>
+                        <div class="card-content">
+                            <div class="card-title">深入理解Transformer架构</div>
+                            <div class="card-meta">
+                                <span class="stat">
+                                    <span class="stat-icon">▶</span> 1.2万
+                                </span>
+                                <span class="stat">
+                                    <span class="stat-icon">👍</span> 328
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mockup -->
+        <div class="section">
+            <h2 class="section-title">页面预览 · 课件列表</h2>
+            <div class="mockup-browser">
+                <div class="mockup-header">
+                    <div class="mockup-dot"></div>
+                    <div class="mockup-dot"></div>
+                    <div class="mockup-dot"></div>
+                    <span style="margin-left: auto; font-size: 12px; color: var(--color-text-muted);">AI教学展示平台</span>
+                </div>
+                <div class="mockup-content">
+                    <div class="mockup-nav">
+                        <span class="nav-item active">全部课件</span>
+                        <span class="nav-item">视频</span>
+                        <span class="nav-item">PDF文档</span>
+                        <span class="nav-item">我的上传</span>
+                        <span style="margin-left: auto;">
+                            <button class="btn btn-primary" style="padding: 6px 12px; font-size: 13px;">+ 上传课件</button>
+                        </span>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <input class="input" type="text" placeholder="搜索课件、讲师、标签..." style="max-width: 400px;">
+                    </div>
+                    
+                    <div class="video-grid">
+                        <div class="card">
+                            <div class="card-thumbnail">▶</div>
+                            <div class="card-content">
+                                <div class="card-title">深入理解Transformer架构</div>
+                                <div class="card-meta">
+                                    <span class="stat"><span class="stat-icon">▶</span> 1.2万</span>
+                                    <span class="stat"><span class="stat-icon">👍</span> 328</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-thumbnail" style="background: linear-gradient(135deg, #374151 0%, #1f2937 100%);">📄</div>
+                            <div class="card-content">
+                                <div class="card-title">PyTorch深度学习实战指南</div>
+                                <div class="card-meta">
+                                    <span class="stat"><span class="stat-icon">▶</span> 8,456</span>
+                                    <span class="stat"><span class="stat-icon">👍</span> 256</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-thumbnail" style="background: linear-gradient(135deg, #4b5563 0%, #1f2937 100%);">▶</div>
+                            <div class="card-content">
+                                <div class="card-title">大模型微调最佳实践</div>
+                                <div class="card-meta">
+                                    <span class="stat"><span class="stat-icon">▶</span> 6,234</span>
+                                    <span class="stat"><span class="stat-icon">👍</span> 189</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

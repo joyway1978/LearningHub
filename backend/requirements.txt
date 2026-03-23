@@ -1,0 +1,43 @@
+# FastAPI
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# Database
+sqlalchemy==2.0.25
+pymysql==1.1.0
+alembic==1.13.1
+
+# Object Storage
+minio==7.2.0
+
+# Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+python-multipart==0.0.6
+
+# Environment
+pydantic-settings==2.1.0
+pydantic[email]==2.5.3
+
+# Utilities
+python-dotenv==1.0.0
+httpx==0.26.0
+
+# Image Processing (for thumbnails)
+pillow==10.2.0
+
+# Video Processing (for thumbnails)
+ffmpeg-python==0.2.0
+
+# PDF Processing (for thumbnails)
+pdf2image==1.17.0
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+httpx==0.26.0
+
+# Scheduling
+apscheduler==3.10.4
