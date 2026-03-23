@@ -5,7 +5,7 @@ Provides password hashing, JWT token creation/verification, and authentication u
 """
 
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Union
 
 from fastapi import Depends, HTTPException, status
@@ -66,13 +66,25 @@ def generate_jwt_secret() -> str:
     return secrets.token_hex(32)
 
 
+# Cache for JWT key to ensure consistency across the application lifecycle
+_jwt_secret_cache: Optional[str] = None
+
+
 def get_jwt_secret() -> str:
     """
     Get JWT secret key from settings or generate one.
 
+    Uses a cached key to ensure token creation and verification use the same key.
+
     Returns:
         str: JWT secret key
     """
+    global _jwt_secret_cache
+
+    # Return cached key if available
+    if _jwt_secret_cache is not None:
+        return _jwt_secret_cache
+
     secret = settings.jwt_secret_key
     if not secret or secret == "your-secret-key-change-in-production":
         # In production, this should be configured
@@ -80,9 +92,13 @@ def get_jwt_secret() -> str:
             raise ValueError(
                 "JWT_SECRET_KEY must be set in production environment"
             )
-        # For development, generate a random key
-        return generate_jwt_secret()
-    return secret
+        # For development, generate a random key and cache it
+        _jwt_secret_cache = generate_jwt_secret()
+        return _jwt_secret_cache
+
+    # Cache the configured key
+    _jwt_secret_cache = secret
+    return _jwt_secret_cache
 
 
 def create_access_token(
@@ -177,7 +193,9 @@ def decode_token(token: str) -> Optional[TokenPayload]:
         token_data = TokenPayload(**payload)
 
         # Check if token is expired
-        if token_data.exp and datetime.utcnow() > token_data.exp:
+        # Use timezone-aware datetime for comparison
+        now = datetime.now(timezone.utc)
+        if token_data.exp and now > token_data.exp:
             return None
 
         return token_data

@@ -340,9 +340,12 @@ async def get_upload_status(
     elif material.status == MaterialStatus.HIDDEN:
         progress = 100  # Complete but hidden
 
+    # Handle both enum and string status values
+    status_value = material.status.value if isinstance(material.status, MaterialStatus) else material.status
+
     return {
         "material_id": material.id,
-        "status": material.status.value,
+        "status": status_value,
         "progress": progress,
         "message": _get_status_message(material.status),
         "thumbnail_path": material.thumbnail_path,

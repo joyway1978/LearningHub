@@ -438,13 +438,15 @@ async def toggle_material_like(
 
     # Check if material is active
     if material.status != MaterialStatus.ACTIVE:
+        # Handle both enum and string status values
+        status_value = material.status.value if isinstance(material.status, MaterialStatus) else material.status
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
                 "error": {
                     "code": "INVALID_STATUS",
                     "message": "Cannot like inactive or hidden materials",
-                    "details": {"status": material.status.value}
+                    "details": {"status": status_value}
                 }
             }
         )

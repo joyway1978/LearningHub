@@ -90,7 +90,51 @@ app.add_middleware(
 )
 
 
+# Import HTTPException for specific handling
+from fastapi import HTTPException
+
+
 # Custom exception handler for unified error responses
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """
+    Handler for HTTPException to ensure consistent error response format.
+
+    If the exception detail already contains an 'error' object, use it directly.
+    Otherwise, wrap it in the standard error format.
+    """
+    # Check if detail already contains our error format
+    if isinstance(exc.detail, dict) and "error" in exc.detail:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=exc.detail
+        )
+
+    # Map status codes to error codes
+    error_code_map = {
+        401: "UNAUTHORIZED",
+        403: "FORBIDDEN",
+        404: "NOT_FOUND",
+        422: "VALIDATION_ERROR",
+        429: "RATE_LIMIT_EXCEEDED",
+    }
+
+    error_code = error_code_map.get(exc.status_code, "INTERNAL_ERROR")
+    message = str(exc.detail) if isinstance(exc.detail, str) else "An error occurred"
+    details = {"errors": exc.detail} if isinstance(exc.detail, list) else {}
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": {
+                "code": error_code,
+                "message": message,
+                "details": details
+            }
+        }
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """
