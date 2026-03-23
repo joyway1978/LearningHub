@@ -17,6 +17,7 @@ import {
   removeToken,
   isAuthenticated,
 } from '@/lib/auth';
+import { logAuth } from '@/lib/logger';
 
 // Context类型定义
 interface AuthContextType {
@@ -79,13 +80,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // 登录
   const login = async (credentials: UserLoginRequest) => {
     setIsLoading(true);
+    logAuth('login', undefined, { email: credentials.email, source: 'auth_context' });
+
     try {
       const response = await api.post<TokenResponse>('/auth/login', credentials);
+
       setToken(response.access_token);
+      logAuth('login', undefined, { email: credentials.email, source: 'auth_context', step: 'token_saved' });
+
       if (response.refresh_token) {
         setRefreshToken(response.refresh_token);
       }
+
       await fetchCurrentUser();
+      logAuth('login', undefined, { email: credentials.email, source: 'auth_context', step: 'user_fetched', isLoggedIn: true });
+    } catch (error) {
+      logAuth('login', undefined, {
+        email: credentials.email,
+        source: 'auth_context',
+        step: 'error',
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -94,13 +110,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // 注册
   const register = async (data: UserRegisterRequest) => {
     setIsLoading(true);
+    logAuth('register', undefined, { email: data.email, source: 'auth_context' });
+
     try {
       const response = await api.post<TokenResponse>('/auth/register', data);
+
+      logAuth('register', undefined, {
+        email: data.email,
+        source: 'auth_context',
+        step: 'api_response_received',
+        hasAccessToken: !!response.access_token,
+        hasRefreshToken: !!response.refresh_token
+      });
+
       setToken(response.access_token);
+      logAuth('register', undefined, { email: data.email, source: 'auth_context', step: 'token_saved' });
+
       if (response.refresh_token) {
         setRefreshToken(response.refresh_token);
+        logAuth('register', undefined, { email: data.email, source: 'auth_context', step: 'refresh_token_saved' });
       }
+
       await fetchCurrentUser();
+      logAuth('register', undefined, { email: data.email, source: 'auth_context', step: 'user_fetched', isLoggedIn: true });
+    } catch (error) {
+      logAuth('register', undefined, {
+        email: data.email,
+        source: 'auth_context',
+        step: 'error',
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
     } finally {
       setIsLoading(false);
     }
