@@ -17,12 +17,15 @@ class TestToggleLike:
 
     def test_like_material_success(self, authorized_client: TestClient, test_video_material: Material, db_session: Session):
         """Test liking a material."""
+        initial_like_count = test_video_material.like_count
+
         response = authorized_client.post(f"/api/v1/materials/{test_video_material.id}/like")
 
         assert response.status_code == 200
         data = response.json()
         assert data["is_liked"] is True
-        assert data["like_count"] == test_video_material.like_count + 1
+        # Verify like_count increased by 1 from the initial value
+        assert data["like_count"] == initial_like_count + 1
 
     def test_unlike_material_success(self, authorized_client: TestClient, test_video_material: Material, test_like: Like, db_session: Session):
         """Test unliking a material (toggle off)."""

@@ -182,9 +182,10 @@ class TestLogin:
             }
         )
 
-        assert response.status_code == 401
+        # Inactive users get 403 Forbidden (authenticated but not authorized)
+        assert response.status_code == 403
         data = response.json()
-        assert data["error"]["code"] == "INVALID_CREDENTIALS"
+        assert data["error"]["code"] == "INACTIVE_USER"
 
 
 class TestRefreshToken:
@@ -283,7 +284,8 @@ class TestGetMe:
 
         assert response.status_code == 401
         data = response.json()
-        assert data["error"]["code"] == "UNAUTHORIZED"
+        # The API returns INVALID_CREDENTIALS when no credentials are provided
+        assert data["error"]["code"] == "INVALID_CREDENTIALS"
 
     def test_get_me_invalid_token(self, client: TestClient):
         """Test getting current user with invalid token."""

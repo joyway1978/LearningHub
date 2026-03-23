@@ -134,7 +134,9 @@ class TestGetMaterialDetail:
         assert data["id"] == test_video_material.id
         assert data["title"] == test_video_material.title
         assert data["description"] == test_video_material.description
-        assert data["type"] == test_video_material.type.value
+        # Handle both enum and string type values
+        type_value = test_video_material.type.value if hasattr(test_video_material.type, 'value') else test_video_material.type
+        assert data["type"] == type_value
         assert data["view_count"] == test_video_material.view_count
         assert data["like_count"] == test_video_material.like_count
         assert "uploader_name" in data
