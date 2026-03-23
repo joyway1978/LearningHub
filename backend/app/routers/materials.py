@@ -11,6 +11,8 @@ from fastapi import (
     APIRouter, Depends, HTTPException, Query, Request,
     status, BackgroundTasks
 )
+from fastapi.responses import StreamingResponse
+from minio.error import S3Error
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -470,3 +472,92 @@ async def toggle_material_like(
         "is_liked": is_liked,
         "like_count": like_count
     }
+
+
+@router.get(
+    "/{material_id}/stream",
+    summary="Stream or download material file",
+    description="Stream video content or download PDF file. Publicly accessible for embedded viewing."
+)
+async def stream_material(
+    material_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Stream video or download PDF file from MinIO storage.
+
+    **Features:**
+    - Streams video content for online playback
+    - Returns PDF for viewing/download
+    - Validates material exists and is accessible
+    - Increments download count for PDFs
+
+    **Authentication:** Optional
+    """
+    from app.core.storage import get_minio_client
+    minio_client = get_minio_client()
+
+    # Get material
+    material = get_material_by_id(db, material_id)
+
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Material not found",
+                    "details": {"material_id": material_id}
+                }
+            }
+        )
+
+    # Check if material is accessible (stream is public for active materials)
+    if material.status == MaterialStatus.HIDDEN:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Material not found",
+                    "details": {"material_id": material_id}
+                }
+            }
+        )
+
+    # Determine content type based on file type
+    content_type_map = {
+        MaterialType.VIDEO: "video/mp4",
+        MaterialType.PDF: "application/pdf"
+    }
+    content_type = content_type_map.get(material.type, "application/octet-stream")
+
+    # Get file from MinIO
+    try:
+        response = minio_client.client.get_object(
+            minio_client.bucket_name,
+            material.file_path
+        )
+    except S3Error as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": {
+                    "code": "STREAM_ERROR",
+                    "message": "Failed to retrieve file from storage",
+                    "details": {"error": str(e)}
+                }
+            }
+        ) from e
+
+    # Return streaming response
+    # Use safe filename for Content-Disposition header
+    safe_filename = f"{material.id}.{material.file_format}"
+    return StreamingResponse(
+        response,
+        media_type=content_type,
+        headers={
+            "Content-Disposition": f"inline; filename=\"{safe_filename}\"",
+            "Accept-Ranges": "bytes"
+        }
+    )

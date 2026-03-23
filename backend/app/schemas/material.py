@@ -26,9 +26,11 @@ class MaterialStatus(str, Enum):
 
 class MaterialBase(BaseModel):
     """Base material schema with common attributes."""
+    model_config = ConfigDict(populate_by_name=True)
+
     title: str = Field(..., min_length=1, max_length=255, description="Material title")
     description: Optional[str] = Field(None, description="Material description")
-    type: MaterialType = Field(..., description="Material type: video or pdf")
+    file_type: MaterialType = Field(..., alias="type", serialization_alias="file_type", description="Material type: video or pdf")
 
 
 class MaterialCreate(MaterialBase):
@@ -45,7 +47,7 @@ class MaterialUpdate(BaseModel):
 
 class MaterialInDB(MaterialBase):
     """Schema for material data as stored in database."""
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     id: int
     file_path: str = Field(..., description="Path to file in MinIO storage")
