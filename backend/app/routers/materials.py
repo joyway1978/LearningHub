@@ -113,6 +113,10 @@ async def list_materials(
         default=None,
         description="Filter by type: video or pdf"
     ),
+    search: Optional[str] = Query(
+        default=None,
+        description="Search by title (case-insensitive partial match)"
+    ),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_current_user)
 ) -> MaterialListResponse:
@@ -161,6 +165,7 @@ async def list_materials(
         limit=page_size,
         status=MaterialStatus.ACTIVE,  # Only show active materials
         material_type=type_filter,
+        search=search,
         sort_by=sort_by,
         sort_order=sort_order,
         include_uploader=True
@@ -170,7 +175,8 @@ async def list_materials(
     total = count_materials(
         db=db,
         status=MaterialStatus.ACTIVE,
-        material_type=type_filter
+        material_type=type_filter,
+        search=search
     )
 
     # Calculate total pages

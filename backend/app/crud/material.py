@@ -204,6 +204,7 @@ def get_materials(
     status: Optional[MaterialStatus] = None,
     material_type: Optional[MaterialType] = None,
     uploader_id: Optional[int] = None,
+    search: Optional[str] = None,
     sort_by: str = "created_at",
     sort_order: str = "desc",
     include_uploader: bool = True
@@ -238,6 +239,8 @@ def get_materials(
         query = query.filter(Material.type == material_type)
     if uploader_id:
         query = query.filter(Material.uploader_id == uploader_id)
+    if search:
+        query = query.filter(Material.title.ilike(f"%{search}%"))
 
     # Validate and apply sorting
     if sort_by not in VALID_SORT_FIELDS:
@@ -258,7 +261,8 @@ def count_materials(
     db: Session,
     status: Optional[MaterialStatus] = None,
     material_type: Optional[MaterialType] = None,
-    uploader_id: Optional[int] = None
+    uploader_id: Optional[int] = None,
+    search: Optional[str] = None
 ) -> int:
     """
     Get total count of materials with optional filtering.
@@ -280,6 +284,8 @@ def count_materials(
         query = query.filter(Material.type == material_type)
     if uploader_id:
         query = query.filter(Material.uploader_id == uploader_id)
+    if search:
+        query = query.filter(Material.title.ilike(f"%{search}%"))
 
     return query.count()
 
