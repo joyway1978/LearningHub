@@ -46,6 +46,11 @@ class ValidationResult:
 VIDEO_MIME_TYPES = {
     "video/mp4": ["mp4"],
     "video/webm": ["webm"],
+    "video/quicktime": ["mov"],
+    "video/x-msvideo": ["avi"],
+    "video/x-matroska": ["mkv"],
+    "video/mpeg": ["mpg", "mpeg"],
+    "video/3gpp": ["3gp"],
 }
 
 PDF_MIME_TYPES = {
@@ -53,7 +58,8 @@ PDF_MIME_TYPES = {
 }
 
 # Allowed extensions per design requirements
-ALLOWED_VIDEO_EXTENSIONS = {"mp4", "webm"}
+# Input formats that will be transcoded to H.264 MP4
+ALLOWED_VIDEO_EXTENSIONS = {"mp4", "webm", "mov", "avi", "mkv", "mpg", "mpeg", "3gp", "m4v"}
 ALLOWED_PDF_EXTENSIONS = {"pdf"}
 
 # Size limits per design requirements
@@ -132,6 +138,23 @@ def _check_magic_numbers(sample: bytes) -> Optional[str]:
     if sample.startswith(b"\x1a\x45\xdf\xa3"):
         return "video/webm"
 
+    # QuickTime/MOV: starts with ftyp qt  or moov
+    if len(sample) >= 12 and sample[4:8] == b"ftyp":
+        brand = sample[8:12]
+        if brand in {b"qt  ", b"moov"}:
+            return "video/quicktime"
+
+    # AVI: starts with RIFF....AVI
+    if sample.startswith(b"RIFF") and len(sample) >= 12:
+        if sample[8:12] == b"AVI ":
+            return "video/x-msvideo"
+
+    # MKV: EBML header but different from WebM
+    if sample.startswith(b"\x1a\x45\xdf\xa3"):
+        # Check for Matroska doc type
+        if b"matroska" in sample[:100].lower():
+            return "video/x-matroska"
+
     return None
 
 
@@ -183,7 +206,8 @@ def validate_file_type(
         False,
         None,
         f"Unsupported file format: .{extension}. "
-        f"Supported formats: video (mp4, webm), PDF (pdf)"
+        f"Supported formats: video (mp4, webm, mov, avi, mkv, mpg, 3gp), PDF (pdf). "
+        f"Videos will be transcoded to H.264 MP4 for browser compatibility."
     )
 
 

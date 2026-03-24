@@ -64,7 +64,7 @@ export default function UploadPage() {
       case 'uploading':
         return `上传中... ${uploadProgress}%`;
       case 'processing':
-        return '文件处理中，正在生成缩略图...';
+        return '视频转码中，请耐心等待（可能需要几分钟）...';
       case 'success':
         return '上传成功！正在跳转...';
       case 'error':
@@ -154,7 +154,7 @@ export default function UploadPage() {
                       d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
                     />
                   </svg>
-                  <span>视频：MP4、WebM（最大 500MB）</span>
+                  <span>视频：MP4、WebM、MOV、AVI、MKV等（最大 500MB，自动转码）</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <svg

@@ -46,17 +46,16 @@ import subprocess
 router = APIRouter()
 
 
-def process_video_for_safari(input_path: str, output_path: str) -> bool:
+def transcode_video_to_h264(input_path: str, output_path: str) -> bool:
     """
-    Process video to move moov atom to beginning for Safari compatibility.
+    Transcode video to H.264 (AVC) codec for browser compatibility.
 
-    Safari requires the moov atom (movie metadata) to be at the beginning
-    of the MP4 file for streaming to work properly. This function uses
-    ffmpeg with -movflags faststart to relocate the moov atom.
+    Converts any video format to H.264/AAC MP4 which is supported by all browsers
+    including Chrome, Safari, Firefox, and Edge.
 
     Args:
         input_path: Path to input video file
-        output_path: Path for output processed video
+        output_path: Path for output transcoded video (MP4)
 
     Returns:
         bool: True if successful, False otherwise
@@ -66,22 +65,28 @@ def process_video_for_safari(input_path: str, output_path: str) -> bool:
             "ffmpeg",
             "-y",  # Overwrite output file if exists
             "-i", input_path,
-            "-c", "copy",  # Copy streams without re-encoding
-            "-movflags", "faststart",  # Move moov atom to beginning
+            "-c:v", "libx264",  # Video codec: H.264
+            "-preset", "medium",  # Encoding speed/compression tradeoff
+            "-crf", "23",  # Quality level (lower = better quality, larger file)
+            "-pix_fmt", "yuv420p",  # Pixel format for browser compatibility
+            "-c:a", "aac",  # Audio codec: AAC
+            "-b:a", "128k",  # Audio bitrate
+            "-movflags", "faststart",  # Move moov atom to beginning for streaming
+            "-f", "mp4",  # Output format
             output_path
         ]
 
-        logger.debug(f"Processing video for Safari: {' '.join(cmd)}")
+        logger.info(f"Transcoding video to H.264: {' '.join(cmd)}")
 
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-            timeout=120  # 2 minute timeout
+            timeout=600  # 10 minute timeout for transcoding
         )
 
         if result.returncode != 0:
-            logger.error(f"ffmpeg faststart failed: {result.stderr}")
+            logger.error(f"ffmpeg transcoding failed: {result.stderr}")
             return False
 
         # Verify output file exists and has content
@@ -89,14 +94,19 @@ def process_video_for_safari(input_path: str, output_path: str) -> bool:
             logger.error("ffmpeg produced no output")
             return False
 
-        logger.info(f"Video processed for Safari: {output_path}")
+        input_size = os.path.getsize(input_path)
+        output_size = os.path.getsize(output_path)
+        logger.info(
+            f"Video transcoded to H.264: {output_path}, "
+            f"input_size={input_size}, output_size={output_size}"
+        )
         return True
 
     except subprocess.TimeoutExpired:
-        logger.error("ffmpeg faststart timed out after 120 seconds")
+        logger.error("ffmpeg transcoding timed out after 600 seconds")
         return False
     except Exception as e:
-        logger.error(f"Video processing for Safari failed: {e}")
+        logger.error(f"Video transcoding to H.264 failed: {e}")
         return False
 
 # Initialize loggers
@@ -237,20 +247,20 @@ async def upload_file(
 
     **Process:**
     1. Validate file type and size
-    2. Process video for Safari compatibility (MP4 moov atom relocation)
+    2. Transcode video to H.264 for browser compatibility (all browsers)
     3. Create database record (status=processing)
     4. Stream file to MinIO
     5. Update record to active
     6. Trigger thumbnail generation (async)
 
     **Supported formats:**
-    - Video: mp4, webm (max 500MB)
+    - Video: mp4, webm, mov, avi, mkv (max 500MB, transcoded to H.264 MP4)
     - PDF: pdf (max 50MB)
 
-    **Safari Compatibility:**
-    MP4 videos are processed with ffmpeg -movflags faststart to ensure
-    the moov atom is at the beginning of the file, which is required
-    for Safari to stream the video properly.
+    **Video Transcoding:**
+    All videos are transcoded to H.264/AAC MP4 format using ffmpeg.
+    This ensures compatibility with Chrome, Safari, Firefox, and Edge.
+    The transcoding process includes -movflags faststart for streaming support.
 
     **Authentication:** Required
     """
@@ -281,21 +291,25 @@ async def upload_file(
             else MaterialType.PDF
         )
 
-        # Step 4: Process video for Safari compatibility (move moov atom to beginning)
+        # Step 4: Transcode video to H.264 for browser compatibility
         processed_file_path = tmp_file_path
-        if material_type == MaterialType.VIDEO and size_validation.extension == "mp4":
-            safari_processed_path = tmp_file_path + ".safari.mp4"
-            if process_video_for_safari(tmp_file_path, safari_processed_path):
-                processed_file_path = safari_processed_path
-                # Update file size after processing
+        if material_type == MaterialType.VIDEO:
+            transcoded_path = tmp_file_path + ".h264.mp4"
+            if transcode_video_to_h264(tmp_file_path, transcoded_path):
+                processed_file_path = transcoded_path
+                # Update file size after transcoding
                 file_size = os.path.getsize(processed_file_path)
-                logger.info(f"Video processed for Safari: {file.filename}, new_size={file_size}")
+                logger.info(f"Video transcoded to H.264: {file.filename}, new_size={file_size}")
             else:
-                logger.warning(f"Safari processing failed, using original: {file.filename}")
+                logger.warning(f"Video transcoding failed, using original: {file.filename}")
 
         # Step 5: Create database record (status=processing)
+        # If video was transcoded, force extension to mp4
+        final_extension = size_validation.extension
+        if material_type == MaterialType.VIDEO and processed_file_path != tmp_file_path:
+            final_extension = "mp4"
         object_name = generate_object_name(current_user.id, file.filename)
-        content_type = get_content_type(size_validation.file_type, size_validation.extension)
+        content_type = get_content_type(size_validation.file_type, final_extension)
 
         material = create_material(
             db=db,
@@ -304,7 +318,7 @@ async def upload_file(
             material_type=material_type,
             file_path=object_name,
             file_size=file_size,
-            file_format=size_validation.extension,
+            file_format=final_extension,
             uploader_id=current_user.id
         )
 
@@ -381,11 +395,11 @@ async def upload_file(
             except OSError:
                 pass
 
-        # Clean up Safari processed file if exists
-        safari_processed_path = tmp_file_path + ".safari.mp4" if tmp_file_path else None
-        if safari_processed_path and os.path.exists(safari_processed_path):
+        # Clean up transcoded file if exists
+        transcoded_path = tmp_file_path + ".h264.mp4" if tmp_file_path else None
+        if transcoded_path and os.path.exists(transcoded_path):
             try:
-                os.unlink(safari_processed_path)
+                os.unlink(transcoded_path)
             except OSError:
                 pass
 

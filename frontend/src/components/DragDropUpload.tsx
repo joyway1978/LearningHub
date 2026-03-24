@@ -4,8 +4,16 @@ import React, { useCallback, useState, useRef } from 'react';
 import { cn, formatFileSize } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
-// 支持的文件类型
-const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm'];
+// 支持的文件类型（与后端转码支持的格式保持一致）
+const ALLOWED_VIDEO_TYPES = [
+  'video/mp4',        // .mp4
+  'video/webm',       // .webm
+  'video/quicktime',  // .mov
+  'video/x-msvideo',  // .avi
+  'video/x-matroska', // .mkv
+  'video/mpeg',       // .mpg, .mpeg
+  'video/3gpp',       // .3gp
+];
 const ALLOWED_PDF_TYPES = ['application/pdf'];
 const ALLOWED_TYPES = [...ALLOWED_VIDEO_TYPES, ...ALLOWED_PDF_TYPES];
 
@@ -17,6 +25,11 @@ const MAX_PDF_SIZE = 50 * 1024 * 1024; // 50MB
 const FILE_TYPE_LABELS: Record<string, string> = {
   'video/mp4': 'MP4视频',
   'video/webm': 'WebM视频',
+  'video/quicktime': 'MOV视频',
+  'video/x-msvideo': 'AVI视频',
+  'video/x-matroska': 'MKV视频',
+  'video/mpeg': 'MPEG视频',
+  'video/3gpp': '3GP视频',
   'application/pdf': 'PDF文档',
 };
 
@@ -52,7 +65,7 @@ export function DragDropUpload({
       return {
         valid: false,
         error: 'INVALID_TYPE',
-        message: '不支持的文件格式。请上传 MP4、WebM 视频或 PDF 文件。',
+        message: '不支持的文件格式。支持的视频格式：MP4、WebM、MOV、AVI、MKV、MPEG；支持 PDF 文件。视频将自动转码为浏览器兼容格式。',
       };
     }
 
