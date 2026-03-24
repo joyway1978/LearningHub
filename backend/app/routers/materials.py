@@ -766,3 +766,123 @@ async def get_material_url(
                 }
             }
         ) from e
+
+
+@router.get(
+    "/{material_id}/thumbnail",
+    summary="Get material thumbnail",
+    description="Stream thumbnail image for a material. Returns JPEG thumbnail for video/PDF files."
+)
+async def get_material_thumbnail(
+    material_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Get thumbnail image for a material.
+
+    **Features:**
+    - Streams thumbnail from MinIO storage
+    - Returns JPEG image
+    - Validates material exists and has thumbnail
+
+    **Authentication:** Optional
+    """
+    from app.core.storage import get_minio_client
+    minio_client = get_minio_client()
+
+    # Get material
+    material = get_material_by_id(db, material_id)
+
+    if not material:
+        logger.warning(f"Thumbnail requested for non-existent material: material_id={material_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Material not found",
+                    "details": {"material_id": material_id}
+                }
+            }
+        )
+
+    # Check if material is accessible
+    if material.status == MaterialStatus.HIDDEN:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Material not found",
+                    "details": {"material_id": material_id}
+                }
+            }
+        )
+
+    # Check if thumbnail exists
+    if not material.thumbnail_path:
+        logger.warning(f"Thumbnail requested but not found: material_id={material_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "THUMBNAIL_NOT_FOUND",
+                    "message": "Thumbnail not available",
+                    "details": {"material_id": material_id}
+                }
+            }
+        )
+
+    # Check if thumbnail is a placeholder
+    if "placeholder" in material.thumbnail_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "THUMBNAIL_NOT_GENERATED",
+                    "message": "Thumbnail generation failed",
+                    "details": {"material_id": material_id}
+                }
+            }
+        )
+
+    try:
+        # Get thumbnail from MinIO
+        logger.info(f"Streaming thumbnail: material_id={material_id}, path={material.thumbnail_path}")
+        response = minio_client.client.get_object(
+            minio_client.bucket_name,
+            material.thumbnail_path
+        )
+
+        return StreamingResponse(
+            response,
+            media_type="image/jpeg",
+            headers={
+                "Cache-Control": "public, max-age=86400"  # Cache for 1 day
+            }
+        )
+
+    except S3Error as e:
+        logger.error(f"MinIO S3Error when streaming thumbnail {material.thumbnail_path}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": {
+                    "code": "THUMBNAIL_ERROR",
+                    "message": "Failed to retrieve thumbnail from storage",
+                    "details": {"error": str(e)}
+                }
+            }
+        ) from e
+    except Exception as e:
+        logger.error(f"Unexpected error when streaming thumbnail {material.thumbnail_path}: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": {
+                    "code": "THUMBNAIL_ERROR",
+                    "message": "Failed to retrieve thumbnail",
+                    "details": {"error": str(e)}
+                }
+            }
+        ) from e

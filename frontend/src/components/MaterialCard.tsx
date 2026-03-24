@@ -43,7 +43,7 @@ function getFileTypeLabel(fileType: string): string {
 }
 
 // 获取缩略图URL
-function getThumbnailUrl(thumbnailPath?: string): string {
+function getThumbnailUrl(materialId: number, thumbnailPath?: string): string {
   if (!thumbnailPath) {
     return '/images/placeholder.png';
   }
@@ -51,16 +51,17 @@ function getThumbnailUrl(thumbnailPath?: string): string {
   if (thumbnailPath.startsWith('http')) {
     return thumbnailPath;
   }
-  // 否则拼接API基础URL
-  const baseURL = process.env.NEXT_PUBLIC_API_URL || '';
-  return `${baseURL}${thumbnailPath}`;
+  // 使用缩略图API端点
+  // 使用完整URL以确保SSR和客户端渲染一致
+  const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+  return `${baseURL}/materials/${materialId}/thumbnail`;
 }
 
 export function MaterialCard({ material }: MaterialCardProps) {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  const thumbnailUrl = getThumbnailUrl(material.thumbnail_path);
+  const thumbnailUrl = getThumbnailUrl(material.id, material.thumbnail_path);
   const uploaderName = material.uploader?.full_name || material.uploader?.username || '未知用户';
   const uploaderAvatar = material.uploader?.avatar_url || '/images/default-avatar.png';
 
