@@ -96,7 +96,7 @@ export function useMaterials(options: UseMaterialsOptions = {}): UseMaterialsRet
 
   // 用于防止重复请求的ref
   const abortControllerRef = useRef<AbortController | null>(null);
-  const isFirstRender = useRef<boolean>(true);
+  const isMountedRef = useRef<boolean>(true);
 
   // 更新URL参数
   const updateURLParams = useCallback((
@@ -120,12 +120,6 @@ export function useMaterials(options: UseMaterialsOptions = {}): UseMaterialsRet
 
   // 获取数据
   const fetchMaterials = useCallback(async () => {
-    // 取消之前的请求
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    abortControllerRef.current = new AbortController();
     setIsLoading(true);
     setError(null);
 
@@ -161,15 +155,10 @@ export function useMaterials(options: UseMaterialsOptions = {}): UseMaterialsRet
   // 首次加载和参数变化时获取数据
   useEffect(() => {
     fetchMaterials();
-
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
   }, [fetchMaterials]);
 
   // 同步状态到URL（非首次渲染）
+  const isFirstRender = useRef<boolean>(true);
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;

@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.crud.material import (
     get_material_by_id, get_materials, count_materials,
-    soft_delete_material, check_material_exists
+    soft_delete_material, check_material_exists, update_material
 )
 from app.crud.like import toggle_like, check_user_liked, get_user_liked_material_ids
 from app.database import get_db
@@ -29,7 +29,7 @@ from app.models.material import MaterialStatus, MaterialType
 from app.models.user import User
 from app.schemas.material import (
     MaterialListResponse, MaterialDetailResponse,
-    MaterialWithUploader
+    MaterialWithUploader, MaterialUpdate
 )
 from app.services.view_service import record_view_async
 from app.core.logging import get_logger, get_audit_logger
