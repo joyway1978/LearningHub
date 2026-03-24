@@ -61,15 +61,15 @@ class RefreshResponse(BaseModel):
 
 @router.post(
     "/register",
-    response_model=UserResponse,
+    response_model=TokenResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user",
-    description="Create a new user account with email, name, and password."
+    description="Create a new user account with email, name, and password. Returns tokens for auto-login."
 )
 async def register(
     user_data: UserCreate,
     db: Session = Depends(get_db)
-) -> UserResponse:
+) -> TokenResponse:
     """
     Register a new user.
 
@@ -77,7 +77,7 @@ async def register(
     - **name**: Display name
     - **password**: Password (minimum 8 characters)
 
-    Returns the created user information.
+    Returns access token, refresh token, and user information for auto-login.
 
     Raises:
         HTTPException 400: If email already exists
@@ -101,7 +101,20 @@ async def register(
     audit_logger.info(f"User registered successfully: user_id={user.id}, email={user.email}")
     logger.info(f"New user registered: {user.email} (ID: {user.id})")
 
-    return UserResponse.model_validate(user)
+    # Create tokens for auto-login
+    access_token = create_access_token(subject=user.id)
+    refresh_token = create_refresh_token(subject=user.id)
+
+    audit_logger.info(f"Auto-login after registration: user_id={user.id}, email={user.email}")
+    logger.info(f"Tokens created for new user: {user.email}")
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        expires_in=settings.access_token_expire_minutes * 60,
+        user=UserResponse.model_validate(user)
+    )
 
 
 @router.post(
