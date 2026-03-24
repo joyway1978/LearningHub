@@ -306,13 +306,6 @@ export function VideoPlayer({
         您的浏览器不支持视频播放
       </video>
 
-      {/* Debug logs overlay */}
-      <div className="absolute top-2 left-2 right-2 max-h-32 overflow-auto bg-black/70 text-xs text-white p-2 rounded z-50">
-        {logs.map((log, i) => (
-          <div key={i} className="font-mono">{log}</div>
-        ))}
-      </div>
-
       {!isReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-stone-900 z-10">
           <div className="text-center">
