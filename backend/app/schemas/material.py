@@ -71,7 +71,7 @@ class MaterialWithUploader(MaterialResponse):
     """Schema for material data including uploader information."""
     uploader_name: str = Field(..., description="Name of the uploader")
     uploader_avatar: Optional[str] = Field(None, description="Avatar URL of the uploader")
-    is_liked: bool = Field(default=False, description="Whether current user has liked")
+    is_liked_by_me: bool = Field(default=False, description="Whether current user has liked")
 
 
 class MaterialListResponse(BaseModel):
@@ -85,7 +85,6 @@ class MaterialListResponse(BaseModel):
 
 class MaterialDetailResponse(MaterialWithUploader):
     """Schema for detailed material response."""
-    is_liked: bool = Field(default=False, description="Whether current user has liked")
     related_materials: List[MaterialResponse] = Field(default=[], description="Related materials")
 
 

@@ -230,7 +230,7 @@ async def list_materials(
             status=material.status,
             created_at=material.created_at,
             updated_at=material.updated_at,
-            is_liked=material.id in liked_material_ids
+            is_liked_by_me=material.id in liked_material_ids
         )
         items.append(item)
 
@@ -365,7 +365,7 @@ async def get_material_detail(
         status=material.status,
         created_at=material.created_at,
         updated_at=material.updated_at,
-        is_liked=is_liked,
+        is_liked_by_me=is_liked,
         related_materials=related_materials
     )
 
@@ -494,6 +494,7 @@ async def toggle_material_like(
     # Toggle like status
     try:
         is_liked, like_count = toggle_like(db, current_user.id, material_id)
+        db.commit()  # Commit the transaction to persist like_count changes
     except ValueError as e:
         logger.warning(
             f"Like toggle failed: material_id={material_id}, user_id={current_user.id}, error={e}"
