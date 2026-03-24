@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://vjs.zencdn.net/8.6.1/video-js.css');
 
 @tailwind base;
 @tailwind components;
@@ -91,4 +92,46 @@
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+}
+
+/* Video.js player fixes */
+.video-js {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.video-js .vjs-tech {
+  object-fit: contain !important;
+}
+
+/* Video.js theme customization to match design system */
+.video-js .vjs-control-bar {
+  background: rgba(26, 26, 46, 0.9) !important;
+}
+
+.video-js .vjs-play-progress {
+  background-color: #f59e0b !important;
+}
+
+.video-js .vjs-slider-bar {
+  background-color: #f59e0b !important;
+}
+
+.video-js .vjs-volume-level {
+  background-color: #f59e0b !important;
+}
+
+.video-js .vjs-big-play-button {
+  background-color: rgba(245, 158, 11, 0.8) !important;
+  border-color: #f59e0b !important;
+}
+
+.video-js:hover .vjs-big-play-button {
+  background-color: rgba(245, 158, 11, 1) !important;
+}
+
+.video-js .vjs-control:focus:before,
+.video-js .vjs-control:hover:before,
+.video-js .vjs-control:focus {
+  text-shadow: 0 0 1em #f59e0b !important;
 }

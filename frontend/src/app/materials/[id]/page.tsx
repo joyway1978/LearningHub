@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useMaterialDetail } from '@/hooks/useMaterialDetail';
@@ -9,6 +9,7 @@ import { PDFViewer } from '@/components/PDFViewer';
 import { LikeButton } from '@/components/LikeButton';
 import { MaterialCard } from '@/components/MaterialCard';
 import { useMaterials } from '@/hooks/useMaterials';
+import { api } from '@/lib/api';
 import { formatDate, formatFileSize } from '@/lib/utils';
 import {
   Eye,
@@ -61,14 +62,8 @@ function getFileTypeLabel(fileType: string): string {
   }
 }
 
-// 获取流式URL
+// Get stream URL (backend proxy - no CORS issues)
 function getStreamUrl(materialId: number): string {
-  const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  return `${baseURL}/api/v1/materials/${materialId}/stream`;
-}
-
-// 获取PDF查看URL
-function getPDFUrl(materialId: number): string {
   const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   return `${baseURL}/api/v1/materials/${materialId}/stream`;
 }
@@ -231,7 +226,7 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
             {/* PDF预览 */}
             {isPDF && (
               <PDFViewer
-                src={getPDFUrl(material.id)}
+                src={getStreamUrl(material.id)}
                 title={material.title}
                 className="min-h-[500px] lg:min-h-[600px]"
               />

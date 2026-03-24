@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { Loader2, Maximize, Minimize, Download, ExternalLink } from 'lucide-react';
+import { Loader2, Maximize, Minimize, Download, ExternalLink, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 import { logMedia } from '@/lib/logger';
 
 interface PDFViewerProps {
@@ -22,10 +22,13 @@ export function PDFViewer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadProgress, setLoadProgress] = useState(0);
-  const objectRef = useRef<HTMLObjectElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pdfDocRef = useRef<any>(null);
+  const renderTaskRef = useRef<any>(null);
+  const [pageNum, setPageNum] = useState(1);
+  const [numPages, setNumPages] = useState(0);
+  const [scale, setScale] = useState(1.0);
   const materialId = useRef<number | null>(null);
 
   // 从URL中提取materialId用于日志
@@ -40,49 +43,205 @@ export function PDFViewer({
     }
   }, [src]);
 
-  // 模拟加载进度
-  const startProgressSimulation = useCallback(() => {
-    setLoadProgress(0);
-    progressIntervalRef.current = setInterval(() => {
-      setLoadProgress((prev) => {
-        if (prev >= 90) return prev; // 停在90%，等真正加载完成到100%
-        return prev + Math.random() * 15;
-      });
-    }, 200);
-  }, []);
+  // 加载 PDF.js 和文档
+  useEffect(() => {
+    let isCancelled = false;
 
-  const stopProgressSimulation = useCallback(() => {
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
-      progressIntervalRef.current = null;
+    const loadPdfJsAndDoc = async () => {
+      try {
+        // 加载 CSS
+        if (!document.getElementById('pdfjs-css')) {
+          const link = document.createElement('link');
+          link.id = 'pdfjs-css';
+          link.rel = 'stylesheet';
+          link.href = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css';
+          document.head.appendChild(link);
+        }
+
+        // 加载 JS
+        if (!(window as any).pdfjsLib) {
+          await new Promise<void>((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Failed to load PDF.js'));
+            document.body.appendChild(script);
+          });
+
+          // 设置 worker
+          const pdfjsLib = (window as any).pdfjsLib;
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        if (isCancelled) return;
+
+        // 现在加载 PDF 文档
+        await loadPDFDocument();
+      } catch (err) {
+        console.error('PDF.js load error:', err);
+        if (!isCancelled) {
+          setError('PDF 组件加载失败');
+          setIsLoading(false);
+        }
+      }
+    };
+
+    const loadPDFDocument = async () => {
+      const pdfjsLib = (window as any).pdfjsLib;
+      if (!pdfjsLib) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        logMedia('play', materialId.current || 0, 'pdf', {
+          action: 'init',
+          title: title || 'unknown',
+          src: src.substring(0, 100),
+        });
+
+        // 加载 PDF
+        const loadingTask = pdfjsLib.getDocument({
+          url: src,
+          withCredentials: false,
+        });
+
+        // 监听进度
+        loadingTask.onProgress = (progress: { loaded: number; total: number }) => {
+          if (progress.total > 0 && !isCancelled) {
+            const percent = (progress.loaded / progress.total) * 100;
+            setLoadProgress(Math.min(percent, 90));
+          }
+        };
+
+        const pdf = await loadingTask.promise;
+        if (isCancelled) return;
+
+        pdfDocRef.current = pdf;
+        setNumPages(pdf.numPages);
+        setLoadProgress(100);
+        setIsLoading(false);
+
+        logMedia('play', materialId.current || 0, 'pdf', {
+          status: 'loaded',
+          pages: pdf.numPages,
+          title: title || 'unknown',
+        });
+
+        // 渲染第一页
+        renderPage(1, pdf);
+      } catch (err) {
+        console.error('PDF load error:', err);
+        if (!isCancelled) {
+          setError('PDF 加载失败');
+          setIsLoading(false);
+          onError?.(err as Error);
+
+          logMedia('error', materialId.current || 0, 'pdf', {
+            error: String(err),
+            title: title || 'unknown',
+          });
+        }
+      }
+    };
+
+    loadPdfJsAndDoc();
+
+    return () => {
+      isCancelled = true;
+      // 取消正在进行的渲染
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+      }
+      // 销毁 PDF 文档
+      if (pdfDocRef.current) {
+        pdfDocRef.current.destroy();
+        pdfDocRef.current = null;
+      }
+    };
+  }, [src, title, onError]);
+
+  // 渲染页面
+  const renderPage = useCallback(async (num: number, pdfDoc: any = null) => {
+    const pdf = pdfDoc || pdfDocRef.current;
+    const canvas = canvasRef.current;
+
+    if (!pdf || !canvas) return;
+
+    try {
+      // 取消之前的渲染任务
+      if (renderTaskRef.current) {
+        await renderTaskRef.current.cancel();
+        renderTaskRef.current = null;
+      }
+
+      const page = await pdf.getPage(num);
+
+      const context = canvas.getContext('2d');
+      if (!context) return;
+
+      // 计算视口
+      const container = containerRef.current;
+      const containerWidth = container ? container.clientWidth - 40 : 800;
+      const viewport = page.getViewport({ scale: 1 });
+      const autoScale = containerWidth / viewport.width;
+      const finalScale = Math.max(scale, autoScale * 0.9);
+
+      const scaledViewport = page.getViewport({ scale: finalScale });
+
+      // 设置 canvas 尺寸
+      canvas.height = scaledViewport.height;
+      canvas.width = scaledViewport.width;
+
+      // 清空画布
+      context.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 渲染
+      const renderContext = {
+        canvasContext: context,
+        viewport: scaledViewport,
+      };
+
+      const task = page.render(renderContext);
+      renderTaskRef.current = task;
+
+      await task.promise;
+      renderTaskRef.current = null;
+
+      setPageNum(num);
+    } catch (err: any) {
+      if (err?.name !== 'RenderingCancelledException') {
+        console.error('Render error:', err);
+      }
     }
-    setLoadProgress(100);
+  }, [scale]);
+
+  // 当 scale 改变时重新渲染当前页
+  useEffect(() => {
+    if (pdfDocRef.current && pageNum > 0 && !isLoading) {
+      renderPage(pageNum);
+    }
+  }, [scale, pageNum, isLoading, renderPage]);
+
+  // 页面导航
+  const goToPrevPage = useCallback(() => {
+    if (pageNum <= 1) return;
+    renderPage(pageNum - 1);
+  }, [pageNum, renderPage]);
+
+  const goToNextPage = useCallback(() => {
+    if (pageNum >= numPages) return;
+    renderPage(pageNum + 1);
+  }, [pageNum, numPages, renderPage]);
+
+  // 缩放
+  const zoomIn = useCallback(() => {
+    setScale(prev => Math.min(prev + 0.2, 3.0));
   }, []);
 
-  // 处理加载完成
-  const handleLoad = useCallback(() => {
-    stopProgressSimulation();
-    setIsLoading(false);
-    logMedia('play', materialId.current || 0, 'pdf', {
-      status: 'loaded',
-      title: title || 'unknown',
-      src: src.substring(0, 100), // 截断URL避免日志过长
-    });
-  }, [stopProgressSimulation, title, src]);
-
-  // 处理加载错误
-  const handleError = useCallback(() => {
-    stopProgressSimulation();
-    setIsLoading(false);
-    const errorMsg = 'PDF加载失败';
-    setError(errorMsg);
-    logMedia('error', materialId.current || 0, 'pdf', {
-      error: errorMsg,
-      title: title || 'unknown',
-      src: src.substring(0, 100),
-    });
-    onError?.(new Error(errorMsg));
-  }, [onError, stopProgressSimulation, title, src]);
+  const zoomOut = useCallback(() => {
+    setScale(prev => Math.max(prev - 0.2, 0.5));
+  }, []);
 
   // 切换全屏
   const toggleFullscreen = useCallback(async () => {
@@ -123,51 +282,6 @@ export function PDFViewer({
     };
   }, []);
 
-  // 清理定时器
-  useEffect(() => {
-    return () => {
-      if (loadTimeoutRef.current) {
-        clearTimeout(loadTimeoutRef.current);
-      }
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // 初始化PDF加载
-  useEffect(() => {
-    logMedia('play', materialId.current || 0, 'pdf', {
-      action: 'init',
-      title: title || 'unknown',
-      src: src.substring(0, 100),
-    });
-
-    setIsLoading(true);
-    setError(null);
-    startProgressSimulation();
-
-    // 设置加载超时检测（10秒）
-    loadTimeoutRef.current = setTimeout(() => {
-      if (isLoading) {
-        // 如果10秒后还在加载，可能是iframe onLoad没触发，强制结束加载状态
-        stopProgressSimulation();
-        setIsLoading(false);
-        logMedia('play', materialId.current || 0, 'pdf', {
-          action: 'load_timeout',
-          title: title || 'unknown',
-          message: 'PDF load timeout - forcing display',
-        });
-      }
-    }, 10000);
-
-    return () => {
-      if (loadTimeoutRef.current) {
-        clearTimeout(loadTimeoutRef.current);
-      }
-    };
-  }, [src, title, isLoading, startProgressSimulation, stopProgressSimulation]);
-
   // 在新标签页打开PDF
   const openInNewTab = useCallback(() => {
     logMedia('play', materialId.current || 0, 'pdf', {
@@ -193,18 +307,8 @@ export function PDFViewer({
 
   // 重试加载
   const handleRetry = useCallback(() => {
-    setError(null);
-    setIsLoading(true);
-    setLoadProgress(0);
-    logMedia('play', materialId.current || 0, 'pdf', {
-      action: 'retry',
-      title: title || 'unknown',
-    });
-    // 强制重新加载object
-    if (objectRef.current) {
-      objectRef.current.data = src;
-    }
-  }, [src, title]);
+    window.location.reload();
+  }, []);
 
   if (error) {
     return (
@@ -244,6 +348,7 @@ export function PDFViewer({
         isFullscreen ? 'fixed inset-0 z-50 rounded-none' : '',
         className
       )}
+      style={{ minHeight: '500px' }}
     >
       {/* 工具栏 */}
       <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-stone-200">
@@ -251,8 +356,62 @@ export function PDFViewer({
           <span className="text-stone-700 font-medium text-sm truncate">
             {title || 'PDF文档'}
           </span>
+          {numPages > 0 && (
+            <span className="text-stone-400 text-sm">
+              ({pageNum} / {numPages} 页)
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {/* 页面导航 */}
+          <div className="flex items-center gap-1 mr-2">
+            <button
+              onClick={goToPrevPage}
+              disabled={pageNum <= 1}
+              className="p-1.5 text-stone-500 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="上一页"
+              title="上一页"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={goToNextPage}
+              disabled={pageNum >= numPages}
+              className="p-1.5 text-stone-500 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="下一页"
+              title="下一页"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="w-px h-5 bg-stone-200 mx-1" />
+
+          {/* 缩放控制 */}
+          <div className="flex items-center gap-1 mr-2">
+            <button
+              onClick={zoomOut}
+              className="p-1.5 text-stone-500 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"
+              aria-label="缩小"
+              title="缩小"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <span className="text-stone-500 text-xs min-w-[40px] text-center">
+              {Math.round(scale * 100)}%
+            </span>
+            <button
+              onClick={zoomIn}
+              className="p-1.5 text-stone-500 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"
+              aria-label="放大"
+              title="放大"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="w-px h-5 bg-stone-200 mx-1" />
+
           {/* 下载按钮 */}
           <button
             onClick={downloadPDF}
@@ -289,8 +448,8 @@ export function PDFViewer({
         </div>
       </div>
 
-      {/* PDF内容区域 */}
-      <div className="relative flex-1 min-h-[400px]">
+      {/* PDF 内容区域 */}
+      <div className="relative flex-1 overflow-auto bg-stone-100 p-4">
         {/* 加载状态 */}
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-stone-50 z-10">
@@ -309,37 +468,14 @@ export function PDFViewer({
           </div>
         )}
 
-        {/* 使用object标签替代iframe，对PDF更可靠 */}
-        <object
-          ref={objectRef}
-          data={src}
-          type="application/pdf"
-          className="w-full h-full min-h-[400px] border-0"
-          onLoad={handleLoad}
-          onError={handleError}
-          title={title || 'PDF预览'}
-        >
-          {/* 备用内容：当浏览器不支持PDF时显示 */}
-          <div className="flex items-center justify-center h-full bg-stone-50">
-            <div className="text-center px-4">
-              <p className="text-stone-600 mb-3">无法在此浏览器中预览PDF</p>
-              <div className="flex gap-2 justify-center">
-                <button
-                  onClick={openInNewTab}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded text-sm transition-colors"
-                >
-                  在新标签页打开
-                </button>
-                <button
-                  onClick={downloadPDF}
-                  className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded text-sm transition-colors"
-                >
-                  下载PDF
-                </button>
-              </div>
-            </div>
-          </div>
-        </object>
+        {/* PDF 画布 */}
+        <div className="flex justify-center min-h-full">
+          <canvas
+            ref={canvasRef}
+            className="shadow-lg bg-white"
+            style={{ display: isLoading ? 'none' : 'block' }}
+          />
+        </div>
       </div>
     </div>
   );

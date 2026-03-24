@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils';
 // 导航项配置
 const navItems = [
   { label: '首页', href: '/', requiresAuth: false },
-  { label: '课件列表', href: '/materials', requiresAuth: false },
   { label: '上传课件', href: '/upload', requiresAuth: true },
 ];
 
@@ -28,7 +27,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/60" style={{ position: '-webkit-sticky' }}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}

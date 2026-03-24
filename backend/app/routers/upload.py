@@ -41,8 +41,63 @@ from app.services.file_validation import (
 )
 from app.services.thumbnail_service import process_thumbnail_generation
 from app.core.logging import get_logger, get_audit_logger
+import subprocess
 
 router = APIRouter()
+
+
+def process_video_for_safari(input_path: str, output_path: str) -> bool:
+    """
+    Process video to move moov atom to beginning for Safari compatibility.
+
+    Safari requires the moov atom (movie metadata) to be at the beginning
+    of the MP4 file for streaming to work properly. This function uses
+    ffmpeg with -movflags faststart to relocate the moov atom.
+
+    Args:
+        input_path: Path to input video file
+        output_path: Path for output processed video
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        cmd = [
+            "ffmpeg",
+            "-y",  # Overwrite output file if exists
+            "-i", input_path,
+            "-c", "copy",  # Copy streams without re-encoding
+            "-movflags", "faststart",  # Move moov atom to beginning
+            output_path
+        ]
+
+        logger.debug(f"Processing video for Safari: {' '.join(cmd)}")
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=120  # 2 minute timeout
+        )
+
+        if result.returncode != 0:
+            logger.error(f"ffmpeg faststart failed: {result.stderr}")
+            return False
+
+        # Verify output file exists and has content
+        if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+            logger.error("ffmpeg produced no output")
+            return False
+
+        logger.info(f"Video processed for Safari: {output_path}")
+        return True
+
+    except subprocess.TimeoutExpired:
+        logger.error("ffmpeg faststart timed out after 120 seconds")
+        return False
+    except Exception as e:
+        logger.error(f"Video processing for Safari failed: {e}")
+        return False
 
 # Initialize loggers
 logger = get_logger(__name__)
@@ -182,14 +237,20 @@ async def upload_file(
 
     **Process:**
     1. Validate file type and size
-    2. Create database record (status=processing)
-    3. Stream file to MinIO
-    4. Update record to active
-    5. Trigger thumbnail generation (async)
+    2. Process video for Safari compatibility (MP4 moov atom relocation)
+    3. Create database record (status=processing)
+    4. Stream file to MinIO
+    5. Update record to active
+    6. Trigger thumbnail generation (async)
 
     **Supported formats:**
     - Video: mp4, webm (max 500MB)
     - PDF: pdf (max 50MB)
+
+    **Safari Compatibility:**
+    MP4 videos are processed with ffmpeg -movflags faststart to ensure
+    the moov atom is at the beginning of the file, which is required
+    for Safari to stream the video properly.
 
     **Authentication:** Required
     """
@@ -220,7 +281,19 @@ async def upload_file(
             else MaterialType.PDF
         )
 
-        # Step 4: Create database record (status=processing)
+        # Step 4: Process video for Safari compatibility (move moov atom to beginning)
+        processed_file_path = tmp_file_path
+        if material_type == MaterialType.VIDEO and size_validation.extension == "mp4":
+            safari_processed_path = tmp_file_path + ".safari.mp4"
+            if process_video_for_safari(tmp_file_path, safari_processed_path):
+                processed_file_path = safari_processed_path
+                # Update file size after processing
+                file_size = os.path.getsize(processed_file_path)
+                logger.info(f"Video processed for Safari: {file.filename}, new_size={file_size}")
+            else:
+                logger.warning(f"Safari processing failed, using original: {file.filename}")
+
+        # Step 5: Create database record (status=processing)
         object_name = generate_object_name(current_user.id, file.filename)
         content_type = get_content_type(size_validation.file_type, size_validation.extension)
 
@@ -235,9 +308,9 @@ async def upload_file(
             uploader_id=current_user.id
         )
 
-        # Step 5: Stream upload to MinIO
+        # Step 6: Stream upload to MinIO
         try:
-            with open(tmp_file_path, "rb") as f:
+            with open(processed_file_path, "rb") as f:
                 minio.upload_file_stream(
                     file_stream=f,
                     object_name=object_name,
@@ -261,10 +334,10 @@ async def upload_file(
                 }
             ) from e
 
-        # Step 6: Update status to active
+        # Step 7: Update status to active
         material = update_material_status(db, material, MaterialStatus.ACTIVE)
 
-        # Step 7: Trigger async thumbnail generation for videos and PDFs
+        # Step 8: Trigger async thumbnail generation for videos and PDFs
         if material_type in (MaterialType.VIDEO, MaterialType.PDF):
             background_tasks.add_task(
                 trigger_thumbnail_generation,
@@ -301,10 +374,18 @@ async def upload_file(
             }
         ) from e
     finally:
-        # Clean up temporary file
+        # Clean up temporary files
         if tmp_file_path and os.path.exists(tmp_file_path):
             try:
                 os.unlink(tmp_file_path)
+            except OSError:
+                pass
+
+        # Clean up Safari processed file if exists
+        safari_processed_path = tmp_file_path + ".safari.mp4" if tmp_file_path else None
+        if safari_processed_path and os.path.exists(safari_processed_path):
+            try:
+                os.unlink(safari_processed_path)
             except OSError:
                 pass
 

@@ -80,16 +80,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // 登录
   const login = async (credentials: UserLoginRequest) => {
     setIsLoading(true);
-    logAuth('login', undefined, { email: credentials.email, source: 'auth_context' });
+    logAuth('login', undefined, { email: credentials.email, source: 'auth_context', rememberMe: credentials.rememberMe });
 
     try {
       const response = await api.post<TokenResponse>('/auth/login', credentials);
 
-      setToken(response.access_token);
-      logAuth('login', undefined, { email: credentials.email, source: 'auth_context', step: 'token_saved' });
+      // 根据"记住我"选项选择存储方式
+      const rememberMe = credentials.rememberMe ?? true;
+      setToken(response.access_token, rememberMe);
+      logAuth('login', undefined, { email: credentials.email, source: 'auth_context', step: 'token_saved', storage: rememberMe ? 'localStorage' : 'sessionStorage' });
 
       if (response.refresh_token) {
-        setRefreshToken(response.refresh_token);
+        setRefreshToken(response.refresh_token, rememberMe);
       }
 
       await fetchCurrentUser();

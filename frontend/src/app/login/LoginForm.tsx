@@ -15,6 +15,7 @@ export function LoginForm() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    rememberMe: false,
   });
 
   const [errors, setErrors] = useState<{
@@ -59,8 +60,11 @@ export function LoginForm() {
 
   // 处理输入变化
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
     // 清除对应字段的错误
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
@@ -83,6 +87,7 @@ export function LoginForm() {
       await login({
         email: formData.email,
         password: formData.password,
+        rememberMe: formData.rememberMe,
       });
 
       // 登录成功，跳转到原页面或首页
@@ -172,10 +177,13 @@ export function LoginForm() {
             </div>
 
             <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center">
+              <label className="flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-[#e7e5e4] text-[#1a1a2e] focus:ring-[#1a1a2e]"
+                  name="rememberMe"
+                  checked={formData.rememberMe}
+                  onChange={handleChange}
+                  className="h-4 w-4 rounded border-[#e7e5e4] text-[#1a1a2e] focus:ring-[#1a1a2e] cursor-pointer"
                 />
                 <span className="ml-2 text-[#78716c]">记住我</span>
               </label>

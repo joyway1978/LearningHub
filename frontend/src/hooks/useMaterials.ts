@@ -135,7 +135,7 @@ export function useMaterials(options: UseMaterialsOptions = {}): UseMaterialsRet
       params.set('page_size', pageSize.toString());
       params.set('sort_by', sortBy);
       params.set('sort_order', sortOrder);
-      if (type) params.set('type', type);
+      if (type) params.set('material_type', type);
       if (search) params.set('search', search);
 
       const response = await api.get<PaginatedResponse<Material>>(

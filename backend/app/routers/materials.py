@@ -122,6 +122,11 @@ async def list_materials(
         default=None,
         description="Search by title (case-insensitive partial match)"
     ),
+    uploader_id: Optional[int] = Query(
+        default=None,
+        ge=1,
+        description="Filter by uploader ID"
+    ),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_current_user)
 ) -> MaterialListResponse:
@@ -179,6 +184,7 @@ async def list_materials(
         limit=page_size,
         status=MaterialStatus.ACTIVE,  # Only show active materials
         material_type=type_filter,
+        uploader_id=uploader_id,
         search=search,
         sort_by=sort_by,
         sort_order=sort_order,
@@ -190,6 +196,7 @@ async def list_materials(
         db=db,
         status=MaterialStatus.ACTIVE,
         material_type=type_filter,
+        uploader_id=uploader_id,
         search=search
     )
 
@@ -525,6 +532,7 @@ async def toggle_material_like(
 )
 async def stream_material(
     material_id: int,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """
@@ -583,15 +591,68 @@ async def stream_material(
         MaterialType.PDF: "application/pdf"
     }
     content_type = content_type_map.get(material.type, "application/octet-stream")
+    safe_filename = f"{material.id}.{material.file_format}"
 
-    # Get file from MinIO
+    # Handle HTTP Range requests for Safari video playback support
+    range_header = request.headers.get("range")
+
     try:
-        logger.info(f"Attempting to stream from MinIO: bucket={minio_client.bucket_name}, path={material.file_path}")
+        if range_header:
+            # Parse range header (e.g., "bytes=0-1023")
+            try:
+                range_match = range_header.replace("bytes=", "").split("-")
+                start = int(range_match[0]) if range_match[0] else 0
+                end = int(range_match[1]) if len(range_match) > 1 and range_match[1] else material.file_size - 1
+
+                # Validate range
+                if start >= material.file_size or end >= material.file_size:
+                    raise HTTPException(
+                        status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
+                        headers={"Content-Range": f"bytes */{material.file_size}"}
+                    )
+
+                content_length = end - start + 1
+
+                # Get partial content from MinIO
+                logger.info(f"Range request: material_id={material_id}, bytes={start}-{end}/{material.file_size}")
+                response = minio_client.client.get_object(
+                    minio_client.bucket_name,
+                    material.file_path,
+                    offset=start,
+                    length=content_length
+                )
+
+                return StreamingResponse(
+                    response,
+                    status_code=status.HTTP_206_PARTIAL_CONTENT,
+                    media_type=content_type,
+                    headers={
+                        "Content-Disposition": f"inline; filename=\"{safe_filename}\"",
+                        "Accept-Ranges": "bytes",
+                        "Content-Range": f"bytes {start}-{end}/{material.file_size}",
+                        "Content-Length": str(content_length)
+                    }
+                )
+            except (ValueError, IndexError) as e:
+                logger.warning(f"Invalid range header: {range_header}, error: {e}, falling back to full content")
+                # Fall through to return full content
+
+        # Get full content from MinIO (for non-range requests or invalid range headers)
+        logger.info(f"Full content request: material_id={material_id}, size={material.file_size}")
         response = minio_client.client.get_object(
             minio_client.bucket_name,
             material.file_path
         )
-        logger.info(f"MinIO get_object succeeded for: {material.file_path}")
+
+        return StreamingResponse(
+            response,
+            media_type=content_type,
+            headers={
+                "Content-Disposition": f"inline; filename=\"{safe_filename}\"",
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(material.file_size)
+            }
+        )
     except S3Error as e:
         logger.error(f"MinIO S3Error when streaming {material.file_path}: {str(e)}")
         raise HTTPException(
@@ -617,14 +678,91 @@ async def stream_material(
             }
         ) from e
 
-    # Return streaming response
-    # Use safe filename for Content-Disposition header
-    safe_filename = f"{material.id}.{material.file_format}"
-    return StreamingResponse(
-        response,
-        media_type=content_type,
-        headers={
-            "Content-Disposition": f"inline; filename=\"{safe_filename}\"",
-            "Accept-Ranges": "bytes"
+
+@router.get(
+    "/{material_id}/url",
+    summary="Get direct file URL",
+    description="Get presigned URL for direct access to video/PDF file from MinIO. Returns a URL that can be used directly in video players or PDF viewers."
+)
+async def get_material_url(
+    material_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Get presigned URL for direct file access from MinIO.
+
+    **Features:**
+    - Returns a presigned URL valid for 1 hour
+    - URL can be used directly in video players and PDF viewers
+    - No file data flows through backend (better performance)
+    - Validates material exists and is accessible
+
+    **Authentication:** Optional (for active materials)
+
+    **Response:**
+    - `url`: Presigned URL for direct access
+    - `expires_in`: URL expiration time in seconds (3600)
+    """
+    from app.core.storage import get_minio_client
+    from datetime import timedelta
+    minio_client = get_minio_client()
+
+    # Get material
+    material = get_material_by_id(db, material_id)
+
+    if not material:
+        logger.warning(f"URL requested for non-existent material: material_id={material_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Material not found",
+                    "details": {"material_id": material_id}
+                }
+            }
+        )
+
+    # Check if material is accessible
+    if material.status == MaterialStatus.HIDDEN:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Material not found",
+                    "details": {"material_id": material_id}
+                }
+            }
+        )
+
+    try:
+        # Generate presigned URL valid for 1 hour
+        presigned_url = minio_client.get_presigned_url(
+            object_name=material.file_path,
+            expires=timedelta(hours=1)
+        )
+
+        logger.info(f"Generated presigned URL for material_id={material_id}, path={material.file_path}")
+
+        return {
+            "url": presigned_url,
+            "expires_in": 3600,
+            "material_id": material_id,
+            "file_type": material.type.value if hasattr(material.type, 'value') else material.type,
+            "file_format": material.file_format
         }
-    )
+
+    except S3Error as e:
+        logger.error(f"MinIO S3Error when generating URL for {material.file_path}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": {
+                    "code": "URL_GENERATION_ERROR",
+                    "message": "Failed to generate file URL",
+                    "details": {"error": str(e)}
+                }
+            }
+        ) from e

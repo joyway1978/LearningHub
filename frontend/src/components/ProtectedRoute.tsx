@@ -15,7 +15,6 @@ const PUBLIC_ROUTES = [
 // 只读页面（不需要登录但可以访问）
 const READONLY_ROUTES = [
   '/',
-  '/materials',
 ];
 
 interface ProtectedRouteProps {
