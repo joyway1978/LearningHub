@@ -62,7 +62,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const thumbnailUrl = getThumbnailUrl(material.id, material.thumbnail_path);
-  const uploaderName = material.uploader?.full_name || material.uploader?.username || '未知用户';
+  const uploaderName = material.uploader?.name || '未知用户';
   const uploaderAvatar = material.uploader?.avatar_url || '/images/default-avatar.png';
 
   return (

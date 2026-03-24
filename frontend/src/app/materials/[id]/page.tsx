@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useMaterialDetail } from '@/hooks/useMaterialDetail';
@@ -9,19 +9,20 @@ import { PDFViewer } from '@/components/PDFViewer';
 import { LikeButton } from '@/components/LikeButton';
 import { MaterialCard } from '@/components/MaterialCard';
 import { useMaterials } from '@/hooks/useMaterials';
-import { api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatDate, formatFileSize } from '@/lib/utils';
+import { Material, MaterialUpdateRequest } from '@/types';
 import {
   Eye,
   Heart,
   Download,
-  Calendar,
-  User,
   FileText,
   ArrowLeft,
   Loader2,
   AlertCircle,
   Video,
+  Edit,
+  X,
 } from 'lucide-react';
 
 interface MaterialDetailPageProps {
@@ -125,6 +126,8 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
   const router = useRouter();
   const { id } = params;
   const materialId = parseInt(id, 10);
+  const { user } = useAuth();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const {
     material,
@@ -133,8 +136,13 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
     isLiked,
     likeCount,
     isLikeLoading,
+    isUpdating,
     toggleLike,
+    updateMaterial,
   } = useMaterialDetail(materialId);
+
+  // 检查当前用户是否是上传者
+  const isUploader = user && material && user.id === material.uploader_id;
 
   // 加载状态
   if (isLoading) {
@@ -177,8 +185,7 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
     );
   }
 
-  const uploaderName =
-    material.uploader?.full_name || material.uploader?.username || '未知用户';
+  const uploaderName = material.uploader?.name || '未知用户';
   const uploaderAvatar =
     material.uploader?.avatar_url || '/images/default-avatar.png';
 
@@ -202,7 +209,17 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
             <h1 className="text-lg font-semibold text-stone-800 truncate max-w-[50%] sm:max-w-md">
               {material.title}
             </h1>
-            <div className="w-16" /> {/* 占位保持居中 */}
+            <div className="flex items-center gap-2">
+              {isUploader && (
+                <button
+                  onClick={() => setIsEditDialogOpen(true)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-stone-600 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span className="hidden sm:inline">编辑</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -289,6 +306,22 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
           />
         </div>
       </div>
+
+      {/* 编辑对话框 */}
+      {isEditDialogOpen && material && (
+        <EditDialog
+          material={material}
+          isOpen={isEditDialogOpen}
+          onClose={() => setIsEditDialogOpen(false)}
+          onSave={async (data) => {
+            const success = await updateMaterial(data);
+            if (success) {
+              setIsEditDialogOpen(false);
+            }
+          }}
+          isLoading={isUpdating}
+        />
+      )}
     </div>
   );
 }
@@ -494,6 +527,119 @@ function MobileInfoPanel({
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+// 编辑对话框
+interface EditDialogProps {
+  material: Material;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: MaterialUpdateRequest) => Promise<void>;
+  isLoading: boolean;
+}
+
+function EditDialog({ material, isOpen, onClose, onSave, isLoading }: EditDialogProps) {
+  const [title, setTitle] = useState(material.title);
+  const [description, setDescription] = useState(material.description || '');
+  const [error, setError] = useState<string | null>(null);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!title.trim()) {
+      setError('标题不能为空');
+      return;
+    }
+
+    if (title.trim().length > 255) {
+      setError('标题不能超过255个字符');
+      return;
+    }
+
+    await onSave({
+      title: title.trim(),
+      description: description.trim() || undefined,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-auto">
+        <div className="flex items-center justify-between p-4 border-b border-stone-200">
+          <h2 className="text-lg font-semibold text-stone-800">编辑课件</h2>
+          <button
+            onClick={onClose}
+            className="p-1 text-stone-400 hover:text-stone-600 rounded-full hover:bg-stone-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 text-red-600 text-sm rounded-md">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">
+              标题 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              placeholder="输入课件标题"
+              maxLength={255}
+            />
+            <p className="text-xs text-stone-400 mt-1">{title.length}/255</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">
+              描述
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+              placeholder="输入课件描述（可选）"
+              rows={4}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-md transition-colors"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 px-4 py-2 text-white bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 rounded-md transition-colors flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  保存中...
+                </>
+              ) : (
+                '保存'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

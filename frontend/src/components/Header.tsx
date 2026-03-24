@@ -83,16 +83,16 @@ export function Header() {
                   {user?.avatar_url ? (
                     <img
                       src={user.avatar_url}
-                      alt={user.username}
+                      alt={user.name}
                       className="w-8 h-8 rounded-full object-cover"
                     />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium">
-                      {user?.username?.charAt(0).toUpperCase() || 'U'}
+                      {user?.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                   )}
                   <span className="hidden sm:block text-sm font-medium text-text-primary">
-                    {user?.username}
+                    {user?.name}
                   </span>
                   <svg
                     className={cn(
@@ -122,7 +122,7 @@ export function Header() {
                     <div className="absolute right-0 mt-2 w-48 bg-surface border border-border rounded-md shadow-lg z-20 py-1">
                       <div className="px-4 py-2 border-b border-border">
                         <p className="text-sm font-medium text-text-primary">
-                          {user?.username}
+                          {user?.name}
                         </p>
                         <p className="text-xs text-text-secondary truncate">
                           {user?.email}

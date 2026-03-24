@@ -61,6 +61,14 @@ export interface MaterialUpdateRequest {
   description?: string;
 }
 
+export interface MaterialEditDialogProps {
+  material: Material;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: MaterialUpdateRequest) => Promise<void>;
+  isLoading: boolean;
+}
+
 // Like Types
 export interface Like {
   id: number;

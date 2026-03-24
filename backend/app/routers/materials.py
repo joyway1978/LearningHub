@@ -370,6 +370,109 @@ async def get_material_detail(
     )
 
 
+@router.put(
+    "/{material_id}",
+    response_model=MaterialDetailResponse,
+    summary="Update material",
+    description="Update material title and description. Only the uploader can edit their own materials."
+)
+async def update_material_endpoint(
+    material_id: int,
+    material_update: MaterialUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+) -> MaterialDetailResponse:
+    """
+    Update material information.
+
+    **Features:**
+    - Only the uploader can edit their own materials
+    - Can only update title and description
+    - Returns the updated material details
+
+    **Authentication:** Required
+    """
+    # Get material
+    material = get_material_by_id(db, material_id, include_uploader=True)
+
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Material not found",
+                    "details": {"material_id": material_id}
+                }
+            }
+        )
+
+    # Check if user is the uploader
+    if material.uploader_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error": {
+                    "code": "FORBIDDEN",
+                    "message": "You can only edit your own materials",
+                    "details": {}
+                }
+            }
+        )
+
+    # Check if material is active
+    if material.status != MaterialStatus.ACTIVE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": {
+                    "code": "INVALID_STATUS",
+                    "message": "Cannot edit inactive or deleted materials",
+                    "details": {"status": material.status.value if isinstance(material.status, MaterialStatus) else material.status}
+                }
+            }
+        )
+
+    # Only allow updating title and description
+    update_data = MaterialUpdate(
+        title=material_update.title,
+        description=material_update.description
+    )
+
+    # Update material
+    updated_material = update_material(db, material, update_data)
+
+    logger.info(
+        f"Material updated: material_id={material_id}, user_id={current_user.id}, "
+        f"title='{updated_material.title}'"
+    )
+
+    # Build response
+    uploader = updated_material.uploader
+    is_liked = check_user_liked(db, current_user.id, material_id)
+
+    return MaterialDetailResponse(
+        id=updated_material.id,
+        title=updated_material.title,
+        description=updated_material.description,
+        type=updated_material.type,
+        file_path=updated_material.file_path,
+        file_size=updated_material.file_size,
+        file_format=updated_material.file_format,
+        thumbnail_path=updated_material.thumbnail_path,
+        uploader_id=updated_material.uploader_id,
+        uploader_name=uploader.name if uploader else "Unknown",
+        uploader_avatar=uploader.avatar_url if uploader else None,
+        view_count=updated_material.view_count,
+        like_count=updated_material.like_count,
+        status=updated_material.status,
+        created_at=updated_material.created_at,
+        updated_at=updated_material.updated_at,
+        is_liked_by_me=is_liked,
+        related_materials=[]
+    )
+
+
 @router.delete(
     "/{material_id}",
     status_code=status.HTTP_204_NO_CONTENT,
