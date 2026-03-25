@@ -7,22 +7,22 @@
 ## 📸 界面预览
 
 ### 首页 - 课件列表
-![首页](screenshots/homepage.png)
+![首页](https://raw.githubusercontent.com/joyway1978/learning_hub/main/screenshots/homepage.png)
 
 ### 移动端适配
-![移动端首页](screenshots/mobile-homepage.png)
+![移动端首页](https://raw.githubusercontent.com/joyway1978/learning_hub/main/screenshots/mobile-homepage.png)
 
 ### 搜索功能
-![搜索](screenshots/search.png)
+![搜索](https://raw.githubusercontent.com/joyway1978/learning_hub/main/screenshots/search.png)
 
 ### 分类筛选
-![PDF筛选](screenshots/filter-pdf.png)
+![PDF筛选](https://raw.githubusercontent.com/joyway1978/learning_hub/main/screenshots/filter-pdf.png)
 
 ### 上传课件
-![上传页面](screenshots/upload-page.png)
+![上传页面](https://raw.githubusercontent.com/joyway1978/learning_hub/main/screenshots/upload-page.png)
 
 ### 登录页面
-![登录页面](screenshots/login-page.png)
+![登录页面](https://raw.githubusercontent.com/joyway1978/learning_hub/main/screenshots/login-page.png)
 
 ## ✨ 功能特性
 
