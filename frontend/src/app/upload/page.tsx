@@ -115,7 +115,7 @@ export default function UploadPage() {
             上传课件
           </h1>
           <p className="text-text-secondary">
-            分享您的教学资源，支持视频和PDF格式
+            分享您的教学资源，支持视频、PDF和Office格式
           </p>
         </div>
 
