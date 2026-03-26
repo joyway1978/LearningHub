@@ -17,11 +17,17 @@ const ALLOWED_VIDEO_TYPES = [
   'video/3gpp',       // .3gp
 ];
 const ALLOWED_PDF_TYPES = ['application/pdf'];
-const ALLOWED_TYPES = [...ALLOWED_VIDEO_TYPES, ...ALLOWED_PDF_TYPES];
+const ALLOWED_OFFICE_TYPES = [
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',  // .docx
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',        // .xlsx
+];
+const ALLOWED_TYPES = [...ALLOWED_VIDEO_TYPES, ...ALLOWED_PDF_TYPES, ...ALLOWED_OFFICE_TYPES];
 
 // 文件大小限制（字节）
 const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB
 const MAX_PDF_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_OFFICE_SIZE = 50 * 1024 * 1024; // 50MB
 
 // 上传状态类型
 export type UploadStatus =
@@ -79,7 +85,7 @@ function validateFileInternal(file: File): { valid: boolean; error: UploadError 
       valid: false,
       error: {
         type: 'INVALID_TYPE',
-        message: '不支持的文件格式。支持的视频格式：MP4、WebM、MOV、AVI、MKV、MPEG；支持 PDF 文件。视频将自动转码为浏览器兼容格式。',
+        message: '不支持的文件格式。支持的视频格式：MP4、WebM、MOV、AVI、MKV、MPEG；支持 PDF 文件；支持 Office 文件（PPT、Word、Excel）。视频将自动转码为浏览器兼容格式，Office 文件将转换为 PDF 显示。',
       },
     };
   }
@@ -101,6 +107,16 @@ function validateFileInternal(file: File): { valid: boolean; error: UploadError 
       error: {
         type: 'FILE_TOO_LARGE',
         message: `PDF文件过大。最大支持 ${formatFileSize(MAX_PDF_SIZE)}。`,
+      },
+    };
+  }
+
+  if (ALLOWED_OFFICE_TYPES.includes(file.type) && file.size > MAX_OFFICE_SIZE) {
+    return {
+      valid: false,
+      error: {
+        type: 'FILE_TOO_LARGE',
+        message: `Office文件过大。最大支持 ${formatFileSize(MAX_OFFICE_SIZE)}。`,
       },
     };
   }
@@ -338,6 +354,8 @@ export {
   ALLOWED_TYPES,
   ALLOWED_VIDEO_TYPES,
   ALLOWED_PDF_TYPES,
+  ALLOWED_OFFICE_TYPES,
   MAX_VIDEO_SIZE,
   MAX_PDF_SIZE,
+  MAX_OFFICE_SIZE,
 };

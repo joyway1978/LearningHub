@@ -74,7 +74,7 @@ export function useMaterials(options: UseMaterialsOptions = {}): UseMaterialsRet
 
   const [type, setTypeState] = useState<MaterialType | ''>(() => {
     const urlType = searchParams.get('type');
-    const validTypes: (MaterialType | '')[] = ['', 'pdf', 'video'];
+    const validTypes: (MaterialType | '')[] = ['', 'pdf', 'video', 'pptx', 'docx', 'xlsx'];
     if (urlType && validTypes.includes(urlType as MaterialType)) {
       return urlType as MaterialType;
     }

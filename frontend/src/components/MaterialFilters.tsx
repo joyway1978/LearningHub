@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { MaterialType } from '@/types';
-import { Clock, TrendingUp, ThumbsUp, FileText, Video, LayoutGrid } from 'lucide-react';
+import { Clock, TrendingUp, ThumbsUp, FileText, Video, LayoutGrid, Presentation, Table } from 'lucide-react';
 
 type SortByType = 'created_at' | 'view_count' | 'like_count' | 'download_count';
 type SortOrderType = 'asc' | 'desc';
@@ -38,6 +38,9 @@ const typeOptions: TypeOption[] = [
   { value: '', label: '全部', icon: <LayoutGrid className="w-4 h-4" /> },
   { value: 'video', label: '视频', icon: <Video className="w-4 h-4" /> },
   { value: 'pdf', label: 'PDF', icon: <FileText className="w-4 h-4" /> },
+  { value: 'pptx', label: 'PPT', icon: <Presentation className="w-4 h-4" /> },
+  { value: 'docx', label: 'Word', icon: <FileText className="w-4 h-4 text-blue-500" /> },
+  { value: 'xlsx', label: 'Excel', icon: <Table className="w-4 h-4 text-green-500" /> },
 ];
 
 export function MaterialFilters({
