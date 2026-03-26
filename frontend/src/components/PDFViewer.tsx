@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { Loader2, Maximize, Minimize, Download, ExternalLink, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
+import { Loader2, Maximize, Minimize, Download, ExternalLink, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText } from 'lucide-react';
 import { logMedia } from '@/lib/logger';
 
 interface PDFViewerProps {
@@ -22,6 +22,8 @@ export function PDFViewer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadProgress, setLoadProgress] = useState(0);
+  const [isConverting, setIsConverting] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const pdfDocRef = useRef<any>(null);
@@ -30,6 +32,7 @@ export function PDFViewer({
   const [numPages, setNumPages] = useState(0);
   const [scale, setScale] = useState(1.0);
   const materialId = useRef<number | null>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 从URL中提取materialId用于日志
   useEffect(() => {
@@ -42,6 +45,15 @@ export function PDFViewer({
       // Ignore parsing errors
     }
   }, [src]);
+
+  // 清理重试定时器
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // 加载 PDF.js 和文档
   useEffect(() => {
@@ -130,18 +142,46 @@ export function PDFViewer({
 
         // 渲染第一页
         renderPage(1, pdf);
-      } catch (err) {
+      } catch (err: any) {
         console.error('PDF load error:', err);
-        if (!isCancelled) {
-          setError('PDF 加载失败');
-          setIsLoading(false);
-          onError?.(err as Error);
+        if (isCancelled) return;
 
-          logMedia('error', materialId.current || 0, 'pdf', {
-            error: String(err),
+        // Check if it's a 503 error (PDF converting)
+        if (err?.status === 503 || err?.message?.includes('503') || err?.name === 'ResponseException') {
+          setIsConverting(true);
+          setError(null);
+          setIsLoading(false);
+
+          logMedia('play', materialId.current || 0, 'pdf', {
+            status: 'converting',
+            retry: retryCount,
             title: title || 'unknown',
           });
+
+          // Auto-retry after 3 seconds (max 20 retries = 60 seconds)
+          if (retryCount < 20) {
+            retryTimeoutRef.current = setTimeout(() => {
+              setRetryCount(prev => prev + 1);
+              setIsConverting(false);
+              setIsLoading(true);
+              loadPdfJsAndDoc();
+            }, 3000);
+          } else {
+            setIsConverting(false);
+            setError('PDF转换超时，请刷新页面重试');
+            onError?.(err as Error);
+          }
+          return;
         }
+
+        setError('PDF 加载失败');
+        setIsLoading(false);
+        onError?.(err as Error);
+
+        logMedia('error', materialId.current || 0, 'pdf', {
+          error: String(err),
+          title: title || 'unknown',
+        });
       }
     };
 
@@ -307,8 +347,43 @@ export function PDFViewer({
 
   // 重试加载
   const handleRetry = useCallback(() => {
+    setRetryCount(0);
+    setError(null);
+    setIsConverting(false);
+    setIsLoading(true);
     window.location.reload();
   }, []);
+
+  // 正在转换中状态
+  if (isConverting) {
+    return (
+      <div
+        className={cn(
+          'relative w-full aspect-[4/3] bg-stone-100 rounded-md flex items-center justify-center border border-stone-200',
+          className
+        )}
+      >
+        <div className="text-center px-4">
+          <FileText className="w-12 h-12 text-amber-500 mx-auto mb-4 animate-pulse" />
+          <p className="text-stone-700 mb-2 font-medium">正在转换为 PDF...</p>
+          <p className="text-stone-400 text-sm mb-4">首次加载需要几秒钟，请稍候</p>
+          <div className="flex items-center justify-center gap-2 text-stone-500">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-sm">重试次数: {retryCount}/20</span>
+          </div>
+          <p className="text-stone-400 text-xs mt-4">
+            如果长时间未加载，请
+            <button
+              onClick={handleRetry}
+              className="text-amber-600 hover:text-amber-700 underline ml-1"
+            >
+              刷新页面
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (

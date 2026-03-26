@@ -27,10 +27,10 @@
 ## ✨ 功能特性
 
 - **用户认证系统**: 注册、登录、JWT Token认证、Token自动刷新
-- **课件管理**: 支持视频(mp4, webm, mov, avi, mkv)和PDF文件的上传和展示
+- **课件管理**: 支持视频(mp4, webm, mov, avi, mkv)、PDF、PPT、Word、Excel文件的上传和展示
 - **智能处理**: 自动生成视频首帧和PDF首页缩略图
 - **浏览功能**: 课件列表、详情查看、缩略图展示、分页加载
-- **搜索筛选**: 支持按标题搜索、按类型筛选(PDF/视频)、多种排序(最新/最热/最多点赞)
+- **搜索筛选**: 支持按标题搜索、按类型筛选(PDF/视频/PPT/Word/Excel)、多种排序(最新/最热/最多点赞)
 - **互动功能**: 点赞、浏览量统计(10分钟内重复浏览去重)
 - **响应式设计**: 完美支持桌面和移动设备
 - **启动脚本**: 一键启动/停止前后端服务，支持自定义端口
@@ -66,6 +66,40 @@
 - Git
 - Node.js >= 18 (本地开发)
 - Python >= 3.9 (本地开发)
+- **LibreOffice >= 7.0** (必须，用于 Office 文件转换为 PDF)
+
+### 安装 LibreOffice
+
+LibreOffice 是处理 Office 文件（PPT、Word、Excel）的必要依赖，用于将 Office 文件转换为 PDF 进行在线预览。
+
+**macOS:**
+```bash
+# 使用 Homebrew 安装稳定版本（推荐）
+brew update
+brew install --cask libreoffice-still
+```
+或从官网下载安装包：https://www.libreoffice.org/download/download/
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install -y libreoffice
+```
+
+**CentOS/RHEL:**
+```bash
+sudo yum install -y libreoffice
+# 或
+sudo dnf install -y libreoffice
+```
+
+**Windows:**
+从官网下载安装程序：https://www.libreoffice.org/download/download/
+
+**验证安装:**
+```bash
+soffice --version
+```
 
 ### 方式一：Docker部署（推荐）
 
@@ -153,16 +187,17 @@ make migrate
 ### 上传课件
 
 1. 点击"上传课件"按钮进入上传页面
-2. 拖拽或点击选择文件（支持视频和PDF）
+2. 拖拽或点击选择文件（支持视频、PDF、PPT、Word、Excel）
 3. 填写课件标题和描述（描述可选，最多500字）
 4. 点击"上传课件"按钮
 5. 等待上传完成，系统会自动生成缩略图
+6. Office文件（PPT、Word、Excel）会自动转换为PDF进行在线预览
 
 ### 浏览课件
 
 1. 在课件列表页浏览所有课件
 2. 使用搜索框按标题搜索课件
-3. 使用筛选按钮按类型筛选（全部/视频/PDF）
+3. 使用筛选按钮按类型筛选（全部/视频/PDF/PPT/Word/Excel）
 4. 使用排序按钮切换排序方式（最新/最热/最多点赞）
 5. 点击课件卡片查看详情
 
@@ -374,15 +409,19 @@ alembic upgrade head
 
 ## 🐛 最近更新
 
+### v1.2.0 (2024-03)
+- ✅ 添加 Office 文件（PPT、Word、Excel）上传和预览支持
+- ✅ 集成 LibreOffice 自动转换 Office 文件为 PDF
+- ✅ 添加 LibreOffice 安装检测和自动安装脚本
+
 ### v1.1.0 (2024-03)
 - ✅ 添加启动脚本 `start.sh`，支持灵活的服务管理
 - ✅ 添加全面的前端测试套件（Hooks、组件、工具函数）
 - ✅ 修复图片资源 404 错误，添加默认占位图
 - ✅ 优化 UI 组件，添加 Button 类型属性
 
-### v1.0.0 (2024-03)
 - ✅ 用户注册、登录、JWT认证
-- ✅ 课件上传（视频/PDF）
+- ✅ 课件上传（视频/PDF/Office）
 - ✅ 课件浏览、搜索、筛选、排序
 - ✅ 点赞功能
 - ✅ 响应式设计

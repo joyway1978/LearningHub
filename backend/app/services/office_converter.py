@@ -62,7 +62,64 @@ def _check_libreoffice_installed() -> bool:
     Returns:
         bool: True if LibreOffice is installed, False otherwise
     """
-    return shutil.which(LIBREOFFICE_CMD) is not None
+    # Check local installation
+    if shutil.which(LIBREOFFICE_CMD) is not None or shutil.which("libreoffice") is not None:
+        return True
+
+    # Check macOS installation path
+    if os.path.exists("/Applications/LibreOffice.app/Contents/MacOS/soffice"):
+        return True
+
+    return False
+
+
+def get_libreoffice_mode() -> tuple[str, str]:
+    """
+    Get the LibreOffice execution mode and command.
+
+    Returns:
+        tuple: (mode, command_path)
+            - mode: "local"
+            - command_path: path to soffice
+
+    Raises:
+        LibreOfficeNotInstalledError: If LibreOffice is not available
+    """
+    # Try 'soffice' first (standard command)
+    cmd = shutil.which("soffice")
+    if cmd:
+        return ("local", cmd)
+
+    # Try 'libreoffice' as fallback
+    cmd = shutil.which("libreoffice")
+    if cmd:
+        return ("local", cmd)
+
+    # Check common macOS installation path
+    macos_path = "/Applications/LibreOffice.app/Contents/MacOS/soffice"
+    if os.path.exists(macos_path):
+        return ("local", macos_path)
+
+    raise LibreOfficeNotInstalledError(
+        "LibreOffice is not installed. Please install it:\n"
+        "  macOS: brew update && brew install --cask libreoffice-still\n"
+        "  Ubuntu: sudo apt-get install libreoffice\n"
+        "  CentOS: sudo yum install libreoffice"
+    )
+
+
+def get_libreoffice_cmd() -> str:
+    """
+    Get the LibreOffice command path.
+
+    Returns:
+        str: Path to LibreOffice command
+
+    Raises:
+        LibreOfficeNotInstalledError: If LibreOffice is not installed
+    """
+    _, cmd = get_libreoffice_mode()
+    return cmd
 
 
 def _get_office_file_type(file_path: str) -> MaterialType:
@@ -109,19 +166,20 @@ def _is_valid_office_file(file_path: str) -> bool:
     return ext in SUPPORTED_OFFICE_EXTENSIONS
 
 
-def _build_libreoffice_command(input_path: str, output_dir: str) -> list:
+def _build_libreoffice_command(input_path: str, output_dir: str, libreoffice_cmd: str) -> list:
     """
     Build the LibreOffice command for PDF conversion.
 
     Args:
         input_path: Path to input office file
         output_dir: Directory for output PDF
+        libreoffice_cmd: Path to LibreOffice command
 
     Returns:
         list: Command arguments for subprocess
     """
     return [
-        LIBREOFFICE_CMD,
+        libreoffice_cmd,
         "--headless",  # Run in headless mode (no GUI)
         "--convert-to", "pdf",  # Convert to PDF format
         "--outdir", output_dir,  # Output directory
@@ -149,10 +207,8 @@ def _run_conversion_sync(input_path: str, output_dir: str) -> str:
         CorruptedFileError: If the source file is corrupted
         ConversionError: For other conversion failures
     """
-    if not _check_libreoffice_installed():
-        raise LibreOfficeNotInstalledError(
-            f"LibreOffice is not installed. '{LIBREOFFICE_CMD}' command not found."
-        )
+    # Get LibreOffice mode and command (will raise if not installed)
+    mode, libreoffice_cmd = get_libreoffice_mode()
 
     # Validate input file exists
     if not os.path.exists(input_path):
@@ -169,7 +225,7 @@ def _run_conversion_sync(input_path: str, output_dir: str) -> str:
         )
 
     # Build command
-    cmd = _build_libreoffice_command(input_path, output_dir)
+    cmd = _build_libreoffice_command(input_path, output_dir, libreoffice_cmd)
 
     logger.debug(f"Running LibreOffice command: {' '.join(cmd)}")
 

@@ -45,6 +45,10 @@ show_help() {
     echo "  --backend-port     指定后端端口 (默认: 8000)"
     echo "  -h, --help         显示帮助信息"
     echo ""
+    echo "依赖说明:"
+    echo "  启动后端时会自动检查 LibreOffice（用于 Office 文件转换）"
+    echo "  如未安装，会提示自动安装"
+    echo ""
     echo "示例:"
     echo "  ./start.sh                          # 启动前后端"
     echo "  ./start.sh start -f                 # 只启动前端"
@@ -71,6 +75,294 @@ log_error() {
 
 log_blue() {
     echo -e "${BLUE}$1${NC}"
+}
+
+# LibreOffice Docker 容器名称
+LIBREOFFICE_CONTAINER="ai_learning_libreoffice"
+LIBREOFFICE_DOCKER_IMAGE="linuxserver/libreoffice:latest"
+
+# 检查 LibreOffice 是否安装
+check_libreoffice() {
+    # 检查本地安装
+    if command -v soffice &> /dev/null; then
+        return 0
+    elif command -v libreoffice &> /dev/null; then
+        return 0
+    fi
+
+    return 1
+}
+
+# 检查 LibreOffice Docker 容器是否运行
+check_libreoffice_docker() {
+    if ! command -v docker &> /dev/null; then
+        return 1
+    fi
+
+    if docker ps -q -f "name=$LIBREOFFICE_CONTAINER" | grep -q .; then
+        return 0
+    fi
+
+    return 1
+}
+
+# 获取操作系统类型
+get_os_type() {
+    case "$(uname -s)" in
+        Darwin*)    echo "macos" ;;
+        Linux*)     echo "linux" ;;
+        CYGWIN*|MINGW*|MSYS*) echo "windows" ;;
+        *)          echo "unknown" ;;
+    esac
+}
+
+# 获取 Linux 发行版
+get_linux_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    elif [ -f /etc/redhat-release ]; then
+        echo "rhel"
+    elif [ -f /etc/debian_version ]; then
+        echo "debian"
+    else
+        echo "unknown"
+    fi
+}
+
+# 安装 LibreOffice
+install_libreoffice() {
+    log_blue "=== 安装 LibreOffice ==="
+    log_info "LibreOffice 是处理 Office 文件 (PPT、Word、Excel) 的必需依赖"
+
+    local os_type=$(get_os_type)
+
+    case "$os_type" in
+        macos)
+            log_info "检测到 macOS 系统"
+            if command -v brew &> /dev/null; then
+                log_info "使用 Homebrew 安装 LibreOffice..."
+                log_info "先更新 Homebrew..."
+                if ! brew update; then
+                    log_warn "Homebrew 更新失败，尝试继续安装..."
+                fi
+                log_info "安装 LibreOffice 稳定版本..."
+                if brew install --cask libreoffice-still; then
+                    log_info "LibreOffice 安装成功"
+                    # 添加 soffice 到 PATH (如果还没添加)
+                    if ! command -v soffice &> /dev/null && [ -d "/Applications/LibreOffice.app/Contents/MacOS" ]; then
+                        log_info "请将以下路径添加到 PATH: /Applications/LibreOffice.app/Contents/MacOS"
+                        export PATH="/Applications/LibreOffice.app/Contents/MacOS:$PATH"
+                    fi
+                    return 0
+                else
+                    log_error "Homebrew 安装失败"
+                    return 1
+                fi
+            else
+                log_warn "未检测到 Homebrew，请访问 https://brew.sh 安装"
+                return 1
+            fi
+            ;;
+
+        linux)
+            local distro=$(get_linux_distro)
+            log_info "检测到 Linux 发行版: $distro"
+
+            case "$distro" in
+                ubuntu|debian)
+                    log_info "使用 apt-get 安装 LibreOffice..."
+                    if sudo apt-get update && sudo apt-get install -y libreoffice; then
+                        log_info "LibreOffice 安装成功"
+                        return 0
+                    else
+                        log_error "apt-get 安装失败"
+                        return 1
+                    fi
+                    ;;
+
+                centos|rhel|fedora|rocky|almalinux)
+                    log_info "使用 yum/dnf 安装 LibreOffice..."
+                    if command -v dnf &> /dev/null; then
+                        if sudo dnf install -y libreoffice; then
+                            log_info "LibreOffice 安装成功"
+                            return 0
+                        fi
+                    else
+                        if sudo yum install -y libreoffice; then
+                            log_info "LibreOffice 安装成功"
+                            return 0
+                        fi
+                    fi
+                    log_error "yum/dnf 安装失败"
+                    return 1
+                    ;;
+
+                arch|manjaro)
+                    log_info "使用 pacman 安装 LibreOffice..."
+                    if sudo pacman -S --noconfirm libreoffice-still; then
+                        log_info "LibreOffice 安装成功"
+                        return 0
+                    else
+                        log_error "pacman 安装失败"
+                        return 1
+                    fi
+                    ;;
+
+                *)
+                    log_warn "未识别的 Linux 发行版: $distro"
+                    return 1
+                    ;;
+            esac
+            ;;
+
+        windows)
+            log_warn "Windows 系统请手动安装 LibreOffice"
+            log_info "下载地址: https://www.libreoffice.org/download/download/"
+            return 1
+            ;;
+
+        *)
+            log_warn "未识别的操作系统: $(uname -s)"
+            return 1
+            ;;
+    esac
+}
+
+# 检查并安装 LibreOffice
+check_and_install_libreoffice() {
+    log_blue "=== 检查 LibreOffice ==="
+
+    if check_libreoffice; then
+        log_info "LibreOffice 已就绪"
+        if command -v soffice &> /dev/null; then
+            log_info "本地 soffice 路径: $(which soffice)"
+        elif command -v libreoffice &> /dev/null; then
+            log_info "本地 libreoffice 路径: $(which libreoffice)"
+        fi
+        return 0
+    fi
+
+    log_warn "LibreOffice 未安装"
+    log_info "LibreOffice 是 Office 文件上传功能的必需依赖"
+    echo ""
+
+    # 尝试本地安装
+    log_blue "是否自动安装 LibreOffice 到本地系统? (Y/n)"
+    read -r response
+
+    if [[ -z "$response" || "$response" =~ ^[Yy]$ ]]; then
+        if install_libreoffice; then
+            return 0
+        else
+            echo ""
+            log_error "自动安装失败，请手动安装"
+            show_libreoffice_install_guide
+            return 1
+        fi
+    else
+        log_warn "跳过 LibreOffice 安装"
+        show_libreoffice_install_guide
+        return 1
+    fi
+}
+
+# 启动 LibreOffice Docker 容器
+start_libreoffice_docker() {
+    log_blue "=== 启动 LibreOffice Docker 容器 ==="
+
+    if ! command -v docker &> /dev/null; then
+        log_error "未安装 Docker，无法使用 Docker 模式"
+        return 1
+    fi
+
+    # 检查容器是否已存在
+    if docker ps -a -q -f "name=$LIBREOFFICE_CONTAINER" | grep -q .; then
+        log_info "LibreOffice 容器已存在，正在启动..."
+        if docker start "$LIBREOFFICE_CONTAINER"; then
+            log_info "LibreOffice Docker 容器启动成功"
+            return 0
+        else
+            log_error "启动现有容器失败"
+            return 1
+        fi
+    else
+        log_info "创建并启动 LibreOffice Docker 容器..."
+        if docker run -d \
+            --name "$LIBREOFFICE_CONTAINER" \
+            --restart unless-stopped \
+            -v /tmp/libreoffice-convert:/tmp/libreoffice-convert \
+            "$LIBREOFFICE_DOCKER_IMAGE" \
+            tail -f /dev/null; then
+            log_info "LibreOffice Docker 容器启动成功"
+            return 0
+        else
+            log_error "创建容器失败"
+            return 1
+        fi
+    fi
+}
+
+# 停止 LibreOffice Docker 容器
+stop_libreoffice_docker() {
+    if check_libreoffice_docker; then
+        log_info "停止 LibreOffice Docker 容器..."
+        docker stop "$LIBREOFFICE_CONTAINER" >/dev/null 2>&1 || true
+        log_info "LibreOffice Docker 容器已停止"
+    fi
+}
+
+# 显示 LibreOffice 安装指导
+show_libreoffice_install_guide() {
+    echo ""
+    log_blue "=== LibreOffice 安装指导 ==="
+    echo ""
+    echo "LibreOffice 是 Office 文件 (PPT、Word、Excel) 上传功能的必需依赖"
+    echo ""
+    echo "安装方式:"
+    echo ""
+    echo "本地安装:"
+    local os_type=$(get_os_type)
+    case "$os_type" in
+        macos)
+            echo "   # 使用 Homebrew (推荐):"
+            echo "   brew update"
+            echo "   brew install --cask libreoffice-still"
+            echo ""
+            echo "   # 或者从官网下载安装包:"
+            echo "   https://www.libreoffice.org/download/download/"
+            ;;
+        linux)
+            local distro=$(get_linux_distro)
+            case "$distro" in
+                ubuntu|debian)
+                    echo "   sudo apt-get update"
+                    echo "   sudo apt-get install libreoffice"
+                    ;;
+                centos|rhel|fedora)
+                    echo "   sudo yum install libreoffice"
+                    echo "   # 或使用 dnf:"
+                    echo "   sudo dnf install libreoffice"
+                    ;;
+                arch|manjaro)
+                    echo "   sudo pacman -S libreoffice-still"
+                    ;;
+                *)
+                    echo "   请参考您的发行版文档安装 LibreOffice"
+                    ;;
+            esac
+            ;;
+        windows)
+            echo "   请从官网下载安装程序:"
+            echo "   https://www.libreoffice.org/download/download/"
+            ;;
+        *)
+            echo "   请访问 https://www.libreoffice.org/download/download/"
+            ;;
+    esac
+    echo ""
+    log_info "安装完成后，请重新运行启动脚本"
+    echo ""
 }
 
 # 检查端口是否被占用
@@ -127,6 +419,9 @@ start_backend() {
         log_warn "请先停止现有服务或使用其他端口"
         return 1
     fi
+
+    # 检查 LibreOffice
+    check_and_install_libreoffice || true
 
     # 进入后端目录
     cd "$BACKEND_DIR"

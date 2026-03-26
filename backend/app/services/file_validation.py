@@ -342,7 +342,8 @@ def validate_upload_file(file: UploadFile) -> ValidationResult:
                 "detected_mime": mime_type,
                 "supported_formats": {
                     "video": list(ALLOWED_VIDEO_EXTENSIONS),
-                    "pdf": list(ALLOWED_PDF_EXTENSIONS)
+                    "pdf": list(ALLOWED_PDF_EXTENSIONS),
+                    "office": list(ALLOWED_OFFICE_EXTENSIONS)
                 }
             }
         )

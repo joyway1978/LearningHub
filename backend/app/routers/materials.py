@@ -32,7 +32,9 @@ from app.schemas.material import (
     MaterialWithUploader, MaterialUpdate
 )
 from app.services.view_service import record_view_async
+from app.services.office_converter import get_converted_pdf_path, check_converted_pdf_exists, convert_office_to_pdf
 from app.core.logging import get_logger, get_audit_logger
+from app.core.tasks import submit_task
 
 router = APIRouter()
 
@@ -689,16 +691,82 @@ async def stream_material(
             }
         )
 
-    # Determine content type based on file type
-    content_type_map = {
-        MaterialType.VIDEO: "video/mp4",
-        MaterialType.PDF: "application/pdf",
-        MaterialType.PPTX: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        MaterialType.DOCX: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        MaterialType.XLSX: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    }
-    content_type = content_type_map.get(material.type, "application/octet-stream")
-    safe_filename = f"{material.id}.{material.file_format}"
+    # Check if this is an Office file that has been converted to PDF
+    is_office = material.type in [MaterialType.PPTX, MaterialType.DOCX, MaterialType.XLSX]
+    converted_pdf_path = None
+    file_size = material.file_size
+    if is_office:
+        converted_pdf_path = get_converted_pdf_path(material_id, material.uploader_id)
+        has_pdf = check_converted_pdf_exists(material_id, material.uploader_id)
+        logger.info(f"Office file check: material_id={material_id}, has_pdf={has_pdf}, path={converted_pdf_path}")
+        if has_pdf:
+            # Get actual PDF file size
+            try:
+                stat = minio_client.client.stat_object(minio_client.bucket_name, converted_pdf_path)
+                file_size = stat.size
+            except Exception as e:
+                logger.warning(f"Failed to get PDF size, using original file size: {e}")
+                has_pdf = False
+        else:
+            # PDF not ready yet, trigger conversion and return 503
+            logger.info(f"PDF not ready for material {material_id}, triggering conversion")
+
+            # Define wrapper function for async conversion in sync context
+            def run_conversion():
+                import asyncio
+                try:
+                    asyncio.run(convert_office_to_pdf(material.file_path, material_id, material.uploader_id))
+                    logger.info(f"Office conversion triggered for material {material_id}")
+                except Exception as e:
+                    logger.error(f"Failed to trigger conversion for material {material_id}: {e}")
+
+            # Submit to task queue
+            submit_task(
+                run_conversion,
+                metadata={
+                    "material_id": material_id,
+                    "operation": "office_conversion_on_demand",
+                    "user_id": material.uploader_id
+                }
+            )
+
+            # Return 503 Service Unavailable with Retry-After header
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                headers={"Retry-After": "3"},  # Suggest retry after 3 seconds
+                detail={
+                    "error": {
+                        "code": "PDF_CONVERTING",
+                        "message": "PDF is being converted, please retry shortly",
+                        "details": {"material_id": material_id, "status": "converting"}
+                    }
+                }
+            )
+    else:
+        has_pdf = False
+
+    # Determine content type and file path based on file type
+    if is_office and has_pdf:
+        # Use converted PDF for Office files
+        content_type = "application/pdf"
+        file_path = converted_pdf_path
+        safe_filename = f"{material.id}.pdf"
+        logger.info(f"Serving converted PDF for Office file: material_id={material_id}, size={file_size}")
+    else:
+        # Use original file
+        content_type_map = {
+            MaterialType.VIDEO: "video/mp4",
+            MaterialType.PDF: "application/pdf",
+            MaterialType.PPTX: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            MaterialType.DOCX: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            MaterialType.XLSX: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        }
+        content_type = content_type_map.get(material.type, "application/octet-stream")
+        file_path = material.file_path
+        safe_filename = f"{material.id}.{material.file_format}"
+
+    # Handle HTTP Range requests for Safari video playback support
+    range_header = request.headers.get("range")
 
     # Handle HTTP Range requests for Safari video playback support
     range_header = request.headers.get("range")
@@ -709,22 +777,22 @@ async def stream_material(
             try:
                 range_match = range_header.replace("bytes=", "").split("-")
                 start = int(range_match[0]) if range_match[0] else 0
-                end = int(range_match[1]) if len(range_match) > 1 and range_match[1] else material.file_size - 1
+                end = int(range_match[1]) if len(range_match) > 1 and range_match[1] else file_size - 1
 
                 # Validate range
-                if start >= material.file_size or end >= material.file_size:
+                if start >= file_size or end >= file_size:
                     raise HTTPException(
                         status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
-                        headers={"Content-Range": f"bytes */{material.file_size}"}
+                        headers={"Content-Range": f"bytes */{file_size}"}
                     )
 
                 content_length = end - start + 1
 
                 # Get partial content from MinIO
-                logger.info(f"Range request: material_id={material_id}, bytes={start}-{end}/{material.file_size}")
+                logger.info(f"Range request: material_id={material_id}, bytes={start}-{end}/{file_size}")
                 response = minio_client.client.get_object(
                     minio_client.bucket_name,
-                    material.file_path,
+                    file_path,
                     offset=start,
                     length=content_length
                 )
@@ -736,7 +804,7 @@ async def stream_material(
                     headers={
                         "Content-Disposition": f"inline; filename=\"{safe_filename}\"",
                         "Accept-Ranges": "bytes",
-                        "Content-Range": f"bytes {start}-{end}/{material.file_size}",
+                        "Content-Range": f"bytes {start}-{end}/{file_size}",
                         "Content-Length": str(content_length)
                     }
                 )
@@ -745,10 +813,10 @@ async def stream_material(
                 # Fall through to return full content
 
         # Get full content from MinIO (for non-range requests or invalid range headers)
-        logger.info(f"Full content request: material_id={material_id}, size={material.file_size}")
+        logger.info(f"Full content request: material_id={material_id}, path={file_path}")
         response = minio_client.client.get_object(
             minio_client.bucket_name,
-            material.file_path
+            file_path
         )
 
         return StreamingResponse(
@@ -757,7 +825,7 @@ async def stream_material(
             headers={
                 "Content-Disposition": f"inline; filename=\"{safe_filename}\"",
                 "Accept-Ranges": "bytes",
-                "Content-Length": str(material.file_size)
+                "Content-Length": str(file_size)
             }
         )
     except S3Error as e:
