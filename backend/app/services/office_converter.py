@@ -1,7 +1,7 @@
 """
 Office to PDF Converter Service Module
 
-Provides synchronous conversion of Office files (PPTX, DOCX, XLSX) to PDF
+Provides async Office to PDF conversion of files (PPTX, DOCX, XLSX) to PDF
 using LibreOffice in headless mode. Handles downloading files from MinIO,
 conversion, and uploading the converted PDF back to MinIO.
 """
@@ -328,7 +328,7 @@ async def convert_office_to_pdf(
         user_id: User ID for storage organization
 
     Returns:
-        str: Path to converted PDF in MinIO (e.g., "converted/1.pdf")
+        str: Path to converted PDF in MinIO (e.g., "converted/1/123.pdf")
 
     Raises:
         LibreOfficeNotInstalledError: If LibreOffice is not installed
@@ -348,8 +348,8 @@ async def convert_office_to_pdf(
         source_filename = Path(source_path).name
         local_source_path = os.path.join(temp_dir, source_filename)
 
-        # Generate output object name
-        converted_object_name = f"converted/{material_id}.pdf"
+        # Generate output object name with user_id for storage organization
+        converted_object_name = f"converted/{user_id}/{material_id}.pdf"
 
         logger.info(
             f"Starting office conversion for material {material_id}, "
@@ -436,38 +436,40 @@ def _cleanup_temp_files(
 
     if temp_dir and os.path.exists(temp_dir):
         try:
-            os.rmdir(temp_dir)
+            shutil.rmtree(temp_dir)
             logger.debug(f"Removed temporary directory: {temp_dir}")
         except OSError as e:
             logger.warning(f"Failed to remove temporary directory {temp_dir}: {e}")
 
 
-def get_converted_pdf_path(material_id: int) -> str:
+def get_converted_pdf_path(material_id: int, user_id: int) -> str:
     """
     Get the expected path for a converted PDF in MinIO.
 
     Args:
         material_id: Material ID
+        user_id: User ID for storage organization
 
     Returns:
         str: Path to converted PDF in MinIO
     """
-    return f"converted/{material_id}.pdf"
+    return f"converted/{user_id}/{material_id}.pdf"
 
 
-def check_converted_pdf_exists(material_id: int) -> bool:
+def check_converted_pdf_exists(material_id: int, user_id: int) -> bool:
     """
     Check if a converted PDF already exists in MinIO.
 
     Args:
         material_id: Material ID
+        user_id: User ID for storage organization
 
     Returns:
         bool: True if converted PDF exists, False otherwise
     """
     try:
         minio_client = get_minio_client()
-        object_name = get_converted_pdf_path(material_id)
+        object_name = get_converted_pdf_path(material_id, user_id)
         return minio_client.file_exists(object_name)
     except Exception as e:
         logger.warning(f"Failed to check if converted PDF exists: {e}")

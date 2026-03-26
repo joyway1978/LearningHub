@@ -450,9 +450,9 @@ class TestGetConvertedPdfPath:
 
     def test_returns_correct_path(self):
         """Should return correct MinIO path for converted PDF."""
-        assert get_converted_pdf_path(123) == "converted/123.pdf"
-        assert get_converted_pdf_path(1) == "converted/1.pdf"
-        assert get_converted_pdf_path(999999) == "converted/999999.pdf"
+        assert get_converted_pdf_path(123, 1) == "converted/1/123.pdf"
+        assert get_converted_pdf_path(1, 42) == "converted/42/1.pdf"
+        assert get_converted_pdf_path(999999, 100) == "converted/100/999999.pdf"
 
 
 class TestCheckConvertedPdfExists:
@@ -465,8 +465,8 @@ class TestCheckConvertedPdfExists:
             mock_client.file_exists.return_value = True
             mock_get_client.return_value = mock_client
 
-            assert check_converted_pdf_exists(123) is True
-            mock_client.file_exists.assert_called_once_with("converted/123.pdf")
+            assert check_converted_pdf_exists(123, 1) is True
+            mock_client.file_exists.assert_called_once_with("converted/1/123.pdf")
 
     def test_returns_false_when_file_not_exists(self):
         """Should return False when converted PDF doesn't exist."""
@@ -475,7 +475,7 @@ class TestCheckConvertedPdfExists:
             mock_client.file_exists.return_value = False
             mock_get_client.return_value = mock_client
 
-            assert check_converted_pdf_exists(123) is False
+            assert check_converted_pdf_exists(123, 1) is False
 
     def test_returns_false_on_error(self):
         """Should return False when MinIO check fails."""
@@ -484,7 +484,7 @@ class TestCheckConvertedPdfExists:
             mock_client.file_exists.side_effect = Exception("MinIO error")
             mock_get_client.return_value = mock_client
 
-            assert check_converted_pdf_exists(123) is False
+            assert check_converted_pdf_exists(123, 1) is False
 
 
 class TestConversionError:
