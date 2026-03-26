@@ -84,3 +84,7 @@ minio_data/
 libreoffice/Dockerfile
 screenshot/
 
+
+# QA test screenshots
+frontend/frontend/
+
