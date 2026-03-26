@@ -344,6 +344,7 @@ export default function UploadPage() {
           <ul className="text-xs text-primary-700 space-y-1 list-disc list-inside">
             <li>视频文件将自动生成缩略图，处理时间取决于视频长度</li>
             <li>PDF文件将显示第一页作为缩略图</li>
+            <li>Office文件（PPT、Word、Excel）将转换为PDF后显示第一页作为缩略图</li>
             <li>请确保您拥有上传内容的版权或使用权</li>
             <li>上传完成后，其他用户可以查看和点赞您的课件</li>
           </ul>
