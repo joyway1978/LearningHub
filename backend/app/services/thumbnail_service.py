@@ -6,7 +6,6 @@ Supports video frame extraction using ffmpeg and PDF page rendering using pdf2im
 Handles uploading generated thumbnails to MinIO and updating database records.
 """
 
-import asyncio
 import io
 import logging
 import os
@@ -22,7 +21,7 @@ from app.core.storage import get_minio_client
 from app.crud.material import update_material_thumbnail
 from app.database import SessionLocal
 from app.models.material import MaterialType
-from app.services.office_converter import convert_office_to_pdf
+from app.services.office_converter import _run_conversion_sync
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -327,8 +326,8 @@ def generate_thumbnail(
             # For Office files, convert to PDF first, then generate thumbnail
             logger.info(f"Processing Office file for thumbnail: {material_id}, type: {file_type.value}")
             try:
-                # Convert Office file to PDF
-                pdf_path = asyncio.run(convert_office_to_pdf(local_file_path, material_id, user_id))
+                # Convert Office file to PDF using local file directly
+                pdf_path = _run_conversion_sync(local_file_path, temp_dir)
                 if pdf_path and os.path.exists(pdf_path):
                     # Generate thumbnail from the converted PDF
                     generate_pdf_thumbnail(pdf_path, local_thumbnail_path)
