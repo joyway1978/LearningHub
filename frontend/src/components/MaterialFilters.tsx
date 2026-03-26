@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MaterialType } from '@/types';
-import { Clock, TrendingUp, ThumbsUp, FileText, Video, LayoutGrid, Presentation, Table } from 'lucide-react';
+import { Clock, TrendingUp, ThumbsUp, FileText, Video, LayoutGrid, Presentation, Table, ChevronDown } from 'lucide-react';
 
 type SortByType = 'created_at' | 'view_count' | 'like_count' | 'download_count';
 type SortOrderType = 'asc' | 'desc';
@@ -51,24 +51,70 @@ export function MaterialFilters({
   onSortChange,
   onOrderChange,
 }: MaterialFiltersProps) {
+  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // 获取当前选中的类型选项
+  const selectedTypeOption = typeOptions.find((opt) => opt.value === type) || typeOptions[0];
+
+  // 点击外部关闭下拉菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsTypeDropdownOpen(false);
+      }
+    };
+
+    if (isTypeDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isTypeDropdownOpen]);
+
+  const handleTypeSelect = (value: MaterialType | '') => {
+    onTypeChange(value);
+    setIsTypeDropdownOpen(false);
+  };
+
   return (
     <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-      {/* 类型筛选 */}
-      <div className="flex flex-wrap gap-2">
-        {typeOptions.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => onTypeChange(option.value)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              type === option.value
-                ? 'bg-amber-500 text-white'
-                : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
-            }`}
-          >
-            {option.icon}
-            {option.label}
-          </button>
-        ))}
+      {/* 类型筛选下拉选择器 */}
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
+          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors border ${
+            type
+              ? 'bg-amber-500 text-white border-amber-500'
+              : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+          }`}
+        >
+          {selectedTypeOption.icon}
+          <span>{selectedTypeOption.label}</span>
+          <ChevronDown className={`w-4 h-4 transition-transform ${isTypeDropdownOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {/* 下拉菜单 */}
+        {isTypeDropdownOpen && (
+          <div className="absolute top-full left-0 mt-1 w-40 bg-white rounded-md shadow-lg border border-stone-200 z-50 py-1">
+            {typeOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handleTypeSelect(option.value)}
+                className={`w-full inline-flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                  type === option.value
+                    ? 'bg-amber-50 text-amber-700'
+                    : 'text-stone-600 hover:bg-stone-50'
+                }`}
+              >
+                {option.icon}
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 排序控件 */}
