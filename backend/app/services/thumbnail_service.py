@@ -6,6 +6,7 @@ Supports video frame extraction using ffmpeg and PDF page rendering using pdf2im
 Handles uploading generated thumbnails to MinIO and updating database records.
 """
 
+import asyncio
 import io
 import logging
 import os
@@ -21,6 +22,7 @@ from app.core.storage import get_minio_client
 from app.crud.material import update_material_thumbnail
 from app.database import SessionLocal
 from app.models.material import MaterialType
+from app.services.office_converter import convert_office_to_pdf
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -321,6 +323,26 @@ def generate_thumbnail(
             generate_video_thumbnail(local_file_path, local_thumbnail_path)
         elif file_type == MaterialType.PDF:
             generate_pdf_thumbnail(local_file_path, local_thumbnail_path)
+        elif file_type in (MaterialType.PPTX, MaterialType.DOCX, MaterialType.XLSX):
+            # For Office files, convert to PDF first, then generate thumbnail
+            logger.info(f"Processing Office file for thumbnail: {material_id}, type: {file_type.value}")
+            try:
+                # Convert Office file to PDF
+                pdf_path = asyncio.run(convert_office_to_pdf(local_file_path, material_id, user_id))
+                if pdf_path and os.path.exists(pdf_path):
+                    # Generate thumbnail from the converted PDF
+                    generate_pdf_thumbnail(pdf_path, local_thumbnail_path)
+                    # Clean up the converted PDF
+                    try:
+                        os.remove(pdf_path)
+                    except OSError:
+                        pass
+                else:
+                    logger.warning(f"Office to PDF conversion failed for material {material_id}")
+                    return None
+            except Exception as e:
+                logger.error(f"Failed to generate thumbnail for Office file {material_id}: {e}")
+                return None
         else:
             logger.warning(f"Unsupported file type for thumbnail: {file_type}")
             return None
