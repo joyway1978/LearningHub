@@ -88,3 +88,7 @@ screenshot/
 # QA test screenshots
 frontend/frontend/
 
+
+# TypeScript build info
+*.tsbuildinfo
+
