@@ -76,3 +76,11 @@ minio_data/
 *.pdf
 *.mp4
 *.webm
+
+# Runtime files
+.pids/
+
+# Temporary directories
+libreoffice/Dockerfile
+screenshot/
+
