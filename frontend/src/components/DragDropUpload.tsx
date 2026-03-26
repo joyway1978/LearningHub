@@ -15,11 +15,17 @@ const ALLOWED_VIDEO_TYPES = [
   'video/3gpp',       // .3gp
 ];
 const ALLOWED_PDF_TYPES = ['application/pdf'];
-const ALLOWED_TYPES = [...ALLOWED_VIDEO_TYPES, ...ALLOWED_PDF_TYPES];
+const ALLOWED_OFFICE_TYPES = [
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',  // .docx
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',        // .xlsx
+];
+const ALLOWED_TYPES = [...ALLOWED_VIDEO_TYPES, ...ALLOWED_PDF_TYPES, ...ALLOWED_OFFICE_TYPES];
 
 // 文件大小限制（字节）
 const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB
 const MAX_PDF_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_OFFICE_SIZE = 50 * 1024 * 1024; // 50MB (same as PDF)
 
 // 文件类型显示名称
 const FILE_TYPE_LABELS: Record<string, string> = {
@@ -31,6 +37,9 @@ const FILE_TYPE_LABELS: Record<string, string> = {
   'video/mpeg': 'MPEG视频',
   'video/3gpp': '3GP视频',
   'application/pdf': 'PDF文档',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPT演示文稿',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Word文档',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'Excel表格',
 };
 
 // 错误类型
@@ -65,7 +74,7 @@ export function DragDropUpload({
       return {
         valid: false,
         error: 'INVALID_TYPE',
-        message: '不支持的文件格式。支持的视频格式：MP4、WebM、MOV、AVI、MKV、MPEG；支持 PDF 文件。视频将自动转码为浏览器兼容格式。',
+        message: '不支持的文件格式。支持的视频格式：MP4、WebM、MOV、AVI、MKV、MPEG；支持 PDF 文件；支持 Office 文件（PPTX、DOCX、XLSX）。视频将自动转码为浏览器兼容格式。',
       };
     }
 
@@ -83,6 +92,14 @@ export function DragDropUpload({
         valid: false,
         error: 'FILE_TOO_LARGE',
         message: `PDF文件过大。最大支持 ${formatFileSize(MAX_PDF_SIZE)}。`,
+      };
+    }
+
+    if (ALLOWED_OFFICE_TYPES.includes(file.type) && file.size > MAX_OFFICE_SIZE) {
+      return {
+        valid: false,
+        error: 'FILE_TOO_LARGE',
+        message: `Office文件过大。最大支持 ${formatFileSize(MAX_OFFICE_SIZE)}。`,
       };
     }
 
@@ -187,6 +204,60 @@ export function DragDropUpload({
         </svg>
       );
     }
+    if (mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+      // PPT - Orange
+      return (
+        <svg
+          className="w-12 h-12 text-orange-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+          />
+        </svg>
+      );
+    }
+    if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      // Word - Blue
+      return (
+        <svg
+          className="w-12 h-12 text-blue-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+          />
+        </svg>
+      );
+    }
+    if (mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+      // Excel - Green
+      return (
+        <svg
+          className="w-12 h-12 text-green-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+          />
+        </svg>
+      );
+    }
     return (
       <svg
         className="w-12 h-12 text-red-500"
@@ -225,7 +296,7 @@ export function DragDropUpload({
             ref={inputRef}
             type="file"
             className="hidden"
-            accept=".mp4,.webm,.pdf,video/mp4,video/webm,application/pdf"
+            accept=".mp4,.webm,.pdf,.pptx,.docx,.xlsx,video/mp4,video/webm,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             onChange={handleInputChange}
           />
 
@@ -258,7 +329,7 @@ export function DragDropUpload({
               或拖拽文件到此处
             </p>
             <p className="text-xs text-text-muted">
-              支持 MP4、WebM 视频（最大 500MB）或 PDF（最大 50MB）
+              支持 MP4、WebM 视频（最大 500MB）、PDF（最大 50MB）或 Office文件（最大 50MB）
             </p>
           </div>
         </div>
@@ -314,7 +385,7 @@ export function DragDropUpload({
 }
 
 // 导出验证函数和常量供外部使用
-export { ALLOWED_TYPES, ALLOWED_VIDEO_TYPES, ALLOWED_PDF_TYPES, MAX_VIDEO_SIZE, MAX_PDF_SIZE };
+export { ALLOWED_TYPES, ALLOWED_VIDEO_TYPES, ALLOWED_PDF_TYPES, ALLOWED_OFFICE_TYPES, MAX_VIDEO_SIZE, MAX_PDF_SIZE, MAX_OFFICE_SIZE };
 export { validateFile as validateUploadFile } from './DragDropUpload';
 
 // 验证文件函数（用于外部调用）
@@ -324,7 +395,7 @@ export function validateFile(file: File): { valid: boolean; error: UploadError; 
     return {
       valid: false,
       error: 'INVALID_TYPE',
-      message: '不支持的文件格式。请上传 MP4、WebM 视频或 PDF 文件。',
+      message: '不支持的文件格式。请上传 MP4、WebM 视频、PDF 文件或 Office 文件（PPTX、DOCX、XLSX）。',
     };
   }
 
@@ -342,6 +413,14 @@ export function validateFile(file: File): { valid: boolean; error: UploadError; 
       valid: false,
       error: 'FILE_TOO_LARGE',
       message: `PDF文件过大。最大支持 ${formatFileSize(MAX_PDF_SIZE)}。`,
+    };
+  }
+
+  if (ALLOWED_OFFICE_TYPES.includes(file.type) && file.size > MAX_OFFICE_SIZE) {
+    return {
+      valid: false,
+      error: 'FILE_TOO_LARGE',
+      message: `Office文件过大。最大支持 ${formatFileSize(MAX_OFFICE_SIZE)}。`,
     };
   }
 
