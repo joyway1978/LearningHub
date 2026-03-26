@@ -40,6 +40,7 @@ from app.services.file_validation import (
     PDF_MAX_SIZE,
 )
 from app.services.thumbnail_service import process_thumbnail_generation
+from app.services.office_converter import convert_office_to_pdf
 from app.core.logging import get_logger, get_audit_logger
 import subprocess
 
@@ -226,6 +227,82 @@ def trigger_thumbnail_generation(
     return task_id
 
 
+def convert_office_to_pdf_wrapper(
+    material_id: int,
+    user_id: int,
+    file_path: str
+) -> None:
+    """
+    Wrapper function for Office to PDF conversion to be used with submit_task.
+
+    This function is designed to be called as a background task via submit_task.
+    It handles the entire workflow including error handling and logging.
+
+    Args:
+        material_id: ID of the material
+        user_id: ID of the user who uploaded the material
+        file_path: Path to file in MinIO
+    """
+    import asyncio
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Run the async conversion function using asyncio.run
+        result_path = asyncio.run(convert_office_to_pdf(file_path, material_id, user_id))
+        logger.info(f"Office conversion completed for material {material_id}: {result_path}")
+    except Exception as e:
+        logger.error(f"Office conversion failed for material {material_id}: {e}")
+        # Don't raise - this ensures the background task doesn't crash
+
+
+def trigger_office_conversion(
+    material_id: int,
+    user_id: int,
+    file_path: str,
+    file_type: MaterialType
+) -> str:
+    """
+    Trigger asynchronous Office file to PDF conversion.
+
+    Submits the Office conversion task to the background task queue.
+    The task runs asynchronously and converts PPTX/DOCX/XLSX files to PDF.
+
+    Args:
+        material_id: ID of material
+        user_id: ID of user who uploaded the material
+        file_path: Path to file in MinIO
+        file_type: Type of material (PPTX, DOCX, or XLSX)
+
+    Returns:
+        str: Task ID for tracking
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    logger.info(
+        f"Queueing Office to PDF conversion for material {material_id}, "
+        f"type: {file_type.value}"
+    )
+
+    # Submit to task manager for async execution
+    task_id = submit_task(
+        convert_office_to_pdf_wrapper,
+        material_id,
+        user_id,
+        file_path,
+        metadata={
+            "material_id": material_id,
+            "user_id": user_id,
+            "file_type": file_type.value,
+            "operation": "office_conversion"
+        }
+    )
+
+    logger.info(f"Office conversion task {task_id} submitted for material {material_id}")
+    return task_id
+
+
 @router.post(
     "",
     response_model=MaterialResponse,
@@ -273,7 +350,7 @@ async def upload_file(
         # Step 1: Initial validation (type check only, before reading file)
         type_validation = validate_upload_file(file)
         if not type_validation.is_valid:
-            logger.warning(f"Upload validation failed (type): {file.filename}, errors={type_validation.errors}")
+            logger.warning(f"Upload validation failed (type): {file.filename}, error={type_validation.error_message}")
             raise_validation_error(type_validation)
 
         # Step 2: Save to temporary file and get size
@@ -282,7 +359,7 @@ async def upload_file(
         # Step 3: Validate file size
         size_validation = validate_file_with_size(file, file_size)
         if not size_validation.is_valid:
-            logger.warning(f"Upload validation failed (size): {file.filename}, size={file_size}, errors={size_validation.errors}")
+            logger.warning(f"Upload validation failed (size): {file.filename}, size={file_size}, error={size_validation.error_message}")
             raise_validation_error(size_validation)
 
         # Determine material type
@@ -359,6 +436,16 @@ async def upload_file(
         if material_type in (MaterialType.VIDEO, MaterialType.PDF, MaterialType.PPTX, MaterialType.DOCX, MaterialType.XLSX):
             background_tasks.add_task(
                 trigger_thumbnail_generation,
+                material.id,
+                current_user.id,
+                object_name,
+                material_type
+            )
+
+        # Step 9: Trigger Office to PDF conversion for Office files
+        if material_type in (MaterialType.PPTX, MaterialType.DOCX, MaterialType.XLSX):
+            background_tasks.add_task(
+                trigger_office_conversion,
                 material.id,
                 current_user.id,
                 object_name,
