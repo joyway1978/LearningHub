@@ -24,6 +24,8 @@ import {
   Edit,
   X,
   Trash2,
+  Presentation,
+  Table,
 } from 'lucide-react';
 
 interface MaterialDetailPageProps {
@@ -39,10 +41,12 @@ function getFileTypeIcon(fileType: string) {
       return <Video className="w-5 h-5" />;
     case 'pdf':
       return <FileText className="w-5 h-5" />;
-    case 'ppt':
-      return <FileText className="w-5 h-5" />;
-    case 'doc':
-      return <FileText className="w-5 h-5" />;
+    case 'pptx':
+      return <Presentation className="w-5 h-5 text-orange-500" />;
+    case 'docx':
+      return <FileText className="w-5 h-5 text-blue-500" />;
+    case 'xlsx':
+      return <Table className="w-5 h-5 text-green-500" />;
     default:
       return <FileText className="w-5 h-5" />;
   }
@@ -55,10 +59,12 @@ function getFileTypeLabel(fileType: string): string {
       return '视频';
     case 'pdf':
       return 'PDF';
-    case 'ppt':
+    case 'pptx':
       return 'PPT';
-    case 'doc':
-      return '文档';
+    case 'docx':
+      return 'Word';
+    case 'xlsx':
+      return 'Excel';
     default:
       return '其他';
   }
@@ -196,6 +202,7 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
   // 判断是否为视频
   const isVideo = material.file_type === 'video';
   const isPDF = material.file_type === 'pdf';
+  const isOffice = ['pptx', 'docx', 'xlsx'].includes(material.file_type);
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -262,8 +269,17 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
               />
             )}
 
+            {/* Office文件预览（已转换为PDF） */}
+            {isOffice && (
+              <PDFViewer
+                src={getStreamUrl(material.id)}
+                title={material.title}
+                className="min-h-[500px] lg:min-h-[600px]"
+              />
+            )}
+
             {/* 其他类型文件提示 */}
-            {!isVideo && !isPDF && (
+            {!isVideo && !isPDF && !isOffice && (
               <div className="aspect-video bg-stone-100 rounded-md border border-stone-200 flex items-center justify-center">
                 <div className="text-center">
                   <FileText className="w-16 h-16 text-stone-300 mx-auto mb-4" />
