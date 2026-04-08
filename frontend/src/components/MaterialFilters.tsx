@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { MaterialType } from '@/types';
-import { Clock, TrendingUp, ThumbsUp, FileText, Video, LayoutGrid, Presentation, Table, ChevronDown } from 'lucide-react';
+import { Clock, TrendingUp, ThumbsUp, FileText, Video, LayoutGrid, Presentation, Table, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type SortByType = 'created_at' | 'view_count' | 'like_count' | 'download_count';
 type SortOrderType = 'asc' | 'desc';
@@ -54,24 +55,19 @@ export function MaterialFilters({
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // 获取当前选中的类型选项
-  const selectedTypeOption = typeOptions.find((opt) => opt.value === type) || typeOptions[0];
+  const selectedTypeOption = typeOptions.find((opt) => opt.value === type) ?? typeOptions[0];
 
-  // 点击外部关闭下拉菜单
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsTypeDropdownOpen(false);
       }
-    };
+    }
 
     if (isTypeDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
   }, [isTypeDropdownOpen]);
 
   const handleTypeSelect = (value: MaterialType | '') => {
@@ -85,15 +81,16 @@ export function MaterialFilters({
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
-          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors border ${
+          className={cn(
+            'inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors border',
             type
               ? 'bg-amber-500 text-white border-amber-500'
               : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
-          }`}
+          )}
         >
           {selectedTypeOption.icon}
           <span>{selectedTypeOption.label}</span>
-          <ChevronDown className={`w-4 h-4 transition-transform ${isTypeDropdownOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={cn('w-4 h-4 transition-transform', isTypeDropdownOpen && 'rotate-180')} />
         </button>
 
         {/* 下拉菜单 */}
@@ -103,11 +100,12 @@ export function MaterialFilters({
               <button
                 key={option.value}
                 onClick={() => handleTypeSelect(option.value)}
-                className={`w-full inline-flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                className={cn(
+                  'w-full inline-flex items-center gap-2 px-4 py-2 text-sm transition-colors',
                   type === option.value
                     ? 'bg-amber-50 text-amber-700'
                     : 'text-stone-600 hover:bg-stone-50'
-                }`}
+                )}
               >
                 {option.icon}
                 {option.label}
@@ -125,11 +123,12 @@ export function MaterialFilters({
             <button
               key={option.value}
               onClick={() => onSortChange(option.value)}
-              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+              className={cn(
+                'inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors',
                 sortBy === option.value
                   ? 'bg-amber-100 text-amber-700'
                   : 'text-stone-600 hover:bg-stone-50'
-              }`}
+              )}
             >
               {option.icon}
               <span className="hidden sm:inline">{option.label}</span>
@@ -143,15 +142,7 @@ export function MaterialFilters({
           className="inline-flex items-center justify-center w-9 h-9 rounded-md border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 transition-colors"
           title={sortOrder === 'asc' ? '升序' : '降序'}
         >
-          {sortOrder === 'asc' ? (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-            </svg>
-          ) : (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
-            </svg>
-          )}
+          {sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
         </button>
       </div>
     </div>

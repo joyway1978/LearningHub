@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Menu, X } from 'lucide-react';
 
 // 导航项配置
 const navItems = [
@@ -56,9 +57,8 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
-            {navItems.map((item) => {
-              if (item.requiresAuth && !isLoggedIn) return null;
-              return (
+            {navItems.map((item) =>
+              item.requiresAuth && !isLoggedIn ? null : (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -66,8 +66,8 @@ export function Header() {
                 >
                   {item.label}
                 </Link>
-              );
-            })}
+              )
+            )}
           </nav>
 
           {/* User Menu / Login Button */}
@@ -165,28 +165,11 @@ export function Header() {
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="md:hidden p-2 rounded-md hover:bg-background"
             >
-              <svg
-                className="w-6 h-6 text-text-primary"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                {isMobileMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+              {isMobileMenuOpen ? (
+                  <X className="w-6 h-6 text-text-primary" />
                 ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
+                  <Menu className="w-6 h-6 text-text-primary" />
                 )}
-              </svg>
             </button>
           </div>
         </div>
@@ -195,9 +178,8 @@ export function Header() {
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-border py-4">
             <nav className="flex flex-col space-y-1">
-              {navItems.map((item) => {
-                if (item.requiresAuth && !isLoggedIn) return null;
-                return (
+              {navItems.map((item) =>
+                item.requiresAuth && !isLoggedIn ? null : (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -206,8 +188,8 @@ export function Header() {
                   >
                     {item.label}
                   </Link>
-                );
-              })}
+                )
+              )}
               {!isLoggedIn && (
                 <>
                   <Link
