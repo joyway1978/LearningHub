@@ -1,0 +1,285 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775639178361,
+  "projectRoot": "/Users/zhongwei9/Documents/gitlab/learn_ai_hub",
+  "techStack": {
+    "languages": [
+      {
+        "name": "C/C++",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "Makefile"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "make build",
+    "testCommand": "make test",
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "backend": {
+      "path": "backend",
+      "purpose": null,
+      "fileCount": 8,
+      "lastAccessed": 1775639178267,
+      "keyFiles": [
+        "Dockerfile",
+        "alembic.ini",
+        "coverage.xml",
+        "pytest.ini",
+        "requirements.txt"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 11,
+      "lastAccessed": 1775639178268,
+      "keyFiles": [
+        "API.md",
+        "DEPLOYMENT.md",
+        "DESIGN.md",
+        "DESIGN_PREVIEW.html",
+        "DESIGN_SYSTEM.md"
+      ]
+    },
+    "frontend": {
+      "path": "frontend",
+      "purpose": null,
+      "fileCount": 24,
+      "lastAccessed": 1775639178268,
+      "keyFiles": [
+        "Dockerfile",
+        "QA_REPORT.md",
+        "QA_REPORT_FINAL.md",
+        "detail-page-qa.png",
+        "filter-pdf-qa.png"
+      ]
+    },
+    "libreoffice": {
+      "path": "libreoffice",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775639178268,
+      "keyFiles": [
+        "Dockerfile"
+      ]
+    },
+    "ls": {
+      "path": "ls",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1775639178269,
+      "keyFiles": []
+    },
+    "screenshot": {
+      "path": "screenshot",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775639178269,
+      "keyFiles": [
+        "homepage.png"
+      ]
+    },
+    "screenshots": {
+      "path": "screenshots",
+      "purpose": null,
+      "fileCount": 6,
+      "lastAccessed": 1775639178269,
+      "keyFiles": [
+        "filter-pdf.png",
+        "homepage.png",
+        "login-page.png",
+        "mobile-homepage.png",
+        "search.png"
+      ]
+    },
+    "test_files": {
+      "path": "test_files",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1775639178269,
+      "keyFiles": [
+        "oversized.marker",
+        "test.mp4",
+        "test.pdf",
+        "test.txt"
+      ]
+    },
+    "backend/app": {
+      "path": "backend/app",
+      "purpose": "Application code",
+      "fileCount": 4,
+      "lastAccessed": 1775639178270,
+      "keyFiles": [
+        "__init__.py",
+        "config.py",
+        "database.py"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "docs/plans/2026-04-09-discussion-feature-plan.md",
+      "accessCount": 16,
+      "lastAccessed": 1775704971072,
+      "type": "file"
+    },
+    {
+      "path": "frontend/src/components/Header.tsx",
+      "accessCount": 9,
+      "lastAccessed": 1775639625512,
+      "type": "file"
+    },
+    {
+      "path": "frontend/src/components/MaterialFilters.tsx",
+      "accessCount": 7,
+      "lastAccessed": 1775639506410,
+      "type": "file"
+    },
+    {
+      "path": "backend/app/models/material.py",
+      "accessCount": 5,
+      "lastAccessed": 1775705075623,
+      "type": "file"
+    },
+    {
+      "path": "frontend/src/app/materials/[id]/page.tsx",
+      "accessCount": 5,
+      "lastAccessed": 1775705842963,
+      "type": "file"
+    },
+    {
+      "path": "backend/app/main.py",
+      "accessCount": 3,
+      "lastAccessed": 1775705344621,
+      "type": "file"
+    },
+    {
+      "path": "frontend/src/app/login/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775639643065,
+      "type": "file"
+    },
+    {
+      "path": "frontend/src/app/register/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775639658747,
+      "type": "file"
+    },
+    {
+      "path": "frontend/src/app/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775639690401,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 2,
+      "lastAccessed": 1775702946128,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 2,
+      "lastAccessed": 1775703145589,
+      "type": "directory"
+    },
+    {
+      "path": "docs/DESIGN_SYSTEM.md",
+      "accessCount": 2,
+      "lastAccessed": 1775704435260,
+      "type": "file"
+    },
+    {
+      "path": "frontend/src/app/layout.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775639309113,
+      "type": "file"
+    },
+    {
+      "path": "frontend/src/lib/utils.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775639329255,
+      "type": "file"
+    },
+    {
+      "path": "TODOS.md",
+      "accessCount": 1,
+      "lastAccessed": 1775702963997,
+      "type": "file"
+    },
+    {
+      "path": "docs/TEST_PLAN.md",
+      "accessCount": 1,
+      "lastAccessed": 1775702964018,
+      "type": "file"
+    },
+    {
+      "path": "docs/plans/2026-03-23-implementation-plan.md",
+      "accessCount": 1,
+      "lastAccessed": 1775702964069,
+      "type": "file"
+    },
+    {
+      "path": "docs/DESIGN.md",
+      "accessCount": 1,
+      "lastAccessed": 1775703138015,
+      "type": "file"
+    },
+    {
+      "path": "backend/app/models/user.py",
+      "accessCount": 1,
+      "lastAccessed": 1775703152123,
+      "type": "file"
+    },
+    {
+      "path": "backend/app/routers/materials.py",
+      "accessCount": 1,
+      "lastAccessed": 1775705132239,
+      "type": "file"
+    },
+    {
+      "path": "backend/app/routers/reactions.py",
+      "accessCount": 1,
+      "lastAccessed": 1775705305012,
+      "type": "file"
+    },
+    {
+      "path": "frontend/src/components/LikeButton.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775705366195,
+      "type": "file"
+    },
+    {
+      "path": "frontend/src/components/ReactionBar.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775705533557,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

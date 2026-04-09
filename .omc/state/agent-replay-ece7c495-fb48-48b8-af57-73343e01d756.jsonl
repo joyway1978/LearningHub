@@ -1,0 +1,9 @@
+{"t":0,"agent":"system","event":"skill_invoked","skill_name":"autoplan"}
+{"t":0,"agent":"system","event":"skill_invoked","skill_name":"autoplan"}
+{"t":0,"agent":"a844dd6","agent_type":"unknown","event":"agent_stop","success":true}
+{"t":0,"agent":"aac140c","agent_type":"general-purpose","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"aac140c","agent_type":"general-purpose","event":"agent_stop","success":true,"duration_ms":128718}
+{"t":0,"agent":"af6b5b0","agent_type":"unknown","event":"agent_stop","success":true}
+{"t":0,"agent":"ad89cdf","agent_type":"unknown","event":"agent_stop","success":true}
+{"t":0,"agent":"aff3adf","agent_type":"unknown","event":"agent_stop","success":true}
+{"t":0,"agent":"system","event":"skill_invoked","skill_name":"using-superpowers"}

@@ -144,6 +144,11 @@ class Material(Base):
         back_populates="material",
         cascade="all, delete-orphan"
     )
+    reactions: Mapped[list["MaterialReaction"]] = relationship(
+        "MaterialReaction",
+        back_populates="material",
+        cascade="all, delete-orphan"
+    )
 
     # Table indexes for query optimization
     __table_args__ = (
@@ -247,3 +252,62 @@ class View(Base):
 
     def __repr__(self) -> str:
         return f"<View(id={self.id}, material_id={self.material_id}, user_id={self.user_id})>"
+
+
+class MaterialReaction(Base):
+    """
+    Material reaction model for tracking user reactions on materials.
+
+    Attributes:
+        id: Primary key
+        material_id: Foreign key to material
+        user_id: Foreign key to user who reacted
+        reaction_type: Type of reaction (thumbs_up, thumbs_down, question, insight)
+        created_at: Reaction timestamp
+        updated_at: Last update timestamp (for reaction type changes)
+    """
+
+    __tablename__ = "material_reactions"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    material_id: Mapped[int] = mapped_column(
+        ForeignKey("materials.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="Foreign key to material"
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="Foreign key to user who reacted"
+    )
+    reaction_type: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        comment="Reaction type: thumbs_up, thumbs_down, question, or insight"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        comment="Reaction timestamp"
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+        comment="Last update timestamp"
+    )
+
+    # Relationships
+    material: Mapped["Material"] = relationship("Material", back_populates="reactions")
+
+    # Unique constraint to prevent duplicate reactions per user per material
+    __table_args__ = (
+        UniqueConstraint("material_id", "user_id", name="uq_material_user_reaction"),
+        Index("idx_reactions_material", "material_id"),
+        Index("idx_reactions_user", "user_id"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<MaterialReaction(id={self.id}, material_id={self.material_id}, user_id={self.user_id}, type={self.reaction_type})>"

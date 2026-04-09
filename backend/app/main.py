@@ -203,10 +203,11 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # Import and include routers
-from app.routers import auth, upload, materials, admin
+from app.routers import auth, upload, materials, admin, reactions
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(upload.router, prefix="/api/v1/upload", tags=["Upload"])
 app.include_router(materials.router, prefix="/api/v1/materials", tags=["Materials"])
+app.include_router(reactions.router, prefix="/api/v1/materials", tags=["Reactions"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
 
 

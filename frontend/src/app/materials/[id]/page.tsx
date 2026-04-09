@@ -7,6 +7,7 @@ import { useMaterialDetail } from '@/hooks/useMaterialDetail';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { PDFViewer } from '@/components/PDFViewer';
 import { LikeButton } from '@/components/LikeButton';
+import { ReactionBar, useReactions } from '@/components/ReactionBar';
 import { MaterialCard } from '@/components/MaterialCard';
 import { useMaterials } from '@/hooks/useMaterials';
 import { useAuth } from '@/contexts/AuthContext';
@@ -498,6 +499,28 @@ function DesktopInfoPanel({
         size="lg"
         className="w-full"
       />
+
+      {/* 反应按钮 */}
+      <DesktopReactionSection materialId={material.id} />
+    </div>
+  );
+}
+
+// 桌面端反应区组件
+function DesktopReactionSection({ materialId }: { materialId: number }) {
+  const { counts, userReaction, isLoading, addReaction, removeReaction } = useReactions(materialId);
+
+  return (
+    <div className="pt-4 border-t border-stone-100">
+      <h3 className="text-sm font-medium text-stone-500 mb-3">表达反馈</h3>
+      <ReactionBar
+        materialId={materialId}
+        counts={counts}
+        userReaction={userReaction}
+        isLoading={isLoading}
+        onReact={addReaction}
+        onRemove={removeReaction}
+      />
     </div>
   );
 }
@@ -574,6 +597,28 @@ function MobileInfoPanel({
           </p>
         </div>
       )}
+
+      {/* 反应按钮 */}
+      <MobileReactionSection materialId={material.id} />
+    </div>
+  );
+}
+
+// 移动端反应区组件
+function MobileReactionSection({ materialId }: { materialId: number }) {
+  const { counts, userReaction, isLoading, addReaction, removeReaction } = useReactions(materialId);
+
+  return (
+    <div className="pt-3 border-t border-stone-100">
+      <h3 className="text-sm font-medium text-stone-500 mb-2">表达反馈</h3>
+      <ReactionBar
+        materialId={materialId}
+        counts={counts}
+        userReaction={userReaction}
+        isLoading={isLoading}
+        onReact={addReaction}
+        onRemove={removeReaction}
+      />
     </div>
   );
 }

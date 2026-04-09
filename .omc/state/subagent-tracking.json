@@ -1,0 +1,17 @@
+{
+  "agents": [
+    {
+      "agent_id": "aac140c",
+      "agent_type": "general-purpose",
+      "started_at": "2026-04-09T02:52:06.757Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-04-09T02:54:15.475Z",
+      "duration_ms": 128718
+    }
+  ],
+  "total_spawned": 1,
+  "total_completed": 1,
+  "total_failed": 0,
+  "last_updated": "2026-04-09T03:21:28.239Z"
+}
