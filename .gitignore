@@ -92,3 +92,6 @@ frontend/frontend/
 # TypeScript build info
 *.tsbuildinfo
 
+
+# OMC (oh-my-claudecode) state
+.omc/
