@@ -216,6 +216,9 @@ function ReactionButton({
     };
   }, []);
 
+  // 判断是否为 👍 按钮（第一个反应类型）
+  const isThumbsUp = tooltip === '有帮助';
+
   return (
     <div className="relative">
       <button
@@ -225,11 +228,16 @@ function ReactionButton({
         onMouseLeave={handleMouseLeave}
         className={cn(
           'flex flex-col items-center gap-1 p-2 rounded-md transition-all duration-200',
-          'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
+          'focus:outline-none focus:ring-2 focus:ring-offset-2',
           'disabled:opacity-60 disabled:cursor-not-allowed',
-          isSelected
-            ? 'bg-stone-100 border-2 border-[#1a1a2e]'
-            : 'bg-white border-2 border-stone-200 hover:border-stone-300',
+          // 👍 按钮使用琥珀色主题，其他使用默认主题
+          isThumbsUp && isSelected
+            ? 'bg-amber-500 border-2 border-amber-500 focus:ring-amber-500'
+            : isThumbsUp
+              ? 'bg-amber-50 border-2 border-amber-200 hover:border-amber-300 focus:ring-amber-500'
+              : isSelected
+                ? 'bg-stone-100 border-2 border-[#1a1a2e] focus:ring-indigo-500'
+                : 'bg-white border-2 border-stone-200 hover:border-stone-300 focus:ring-indigo-500',
           isLoading && 'animate-pulse'
         )}
         aria-label={tooltip}
@@ -240,7 +248,7 @@ function ReactionButton({
         <span
           className={cn(
             'text-xl leading-none transition-all duration-200',
-            isSelected ? 'grayscale-0' : 'grayscale hover:grayscale-0'
+            isThumbsUp && isSelected ? 'grayscale-0' : isSelected ? 'grayscale-0' : 'grayscale hover:grayscale-0'
           )}
         >
           {emoji}
@@ -250,7 +258,7 @@ function ReactionButton({
         <span
           className={cn(
             'text-xs font-medium tabular-nums',
-            isSelected ? 'text-[#1a1a2e]' : 'text-stone-500'
+            isThumbsUp && isSelected ? 'text-white' : isSelected ? 'text-[#1a1a2e]' : 'text-stone-500'
           )}
         >
           {count}

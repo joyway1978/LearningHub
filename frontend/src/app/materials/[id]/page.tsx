@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useMaterialDetail } from '@/hooks/useMaterialDetail';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { PDFViewer } from '@/components/PDFViewer';
-import { LikeButton } from '@/components/LikeButton';
 import { ReactionBar, useReactions } from '@/components/ReactionBar';
 import { MaterialCard } from '@/components/MaterialCard';
 import { useMaterials } from '@/hooks/useMaterials';
@@ -15,7 +14,6 @@ import { formatDate, formatFileSize } from '@/lib/utils';
 import { Material, MaterialUpdateRequest } from '@/types';
 import {
   Eye,
-  Heart,
   Download,
   FileText,
   ArrowLeft,
@@ -142,12 +140,8 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
     material,
     isLoading,
     error,
-    isLiked,
-    likeCount,
-    isLikeLoading,
     isUpdating,
     isDeleting,
-    toggleLike,
     updateMaterial,
     deleteMaterial,
   } = useMaterialDetail(materialId);
@@ -298,10 +292,6 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
             <div className="lg:hidden mt-6 bg-white rounded-md border border-stone-200 p-4">
               <MobileInfoPanel
                 material={material}
-                isLiked={isLiked}
-                likeCount={likeCount}
-                isLikeLoading={isLikeLoading}
-                onToggleLike={toggleLike}
                 uploaderName={uploaderName}
                 uploaderAvatar={uploaderAvatar}
               />
@@ -313,10 +303,6 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
             <div className="bg-white rounded-md border border-stone-200 p-6 sticky top-20">
               <DesktopInfoPanel
                 material={material}
-                isLiked={isLiked}
-                likeCount={likeCount}
-                isLikeLoading={isLikeLoading}
-                onToggleLike={toggleLike}
                 uploaderName={uploaderName}
                 uploaderAvatar={uploaderAvatar}
               />
@@ -377,20 +363,12 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
 // 桌面端信息面板
 interface InfoPanelProps {
   material: any;
-  isLiked: boolean;
-  likeCount: number;
-  isLikeLoading: boolean;
-  onToggleLike: () => void;
   uploaderName: string;
   uploaderAvatar: string;
 }
 
 function DesktopInfoPanel({
   material,
-  isLiked,
-  likeCount,
-  isLikeLoading,
-  onToggleLike,
   uploaderName,
   uploaderAvatar,
 }: InfoPanelProps) {
@@ -420,11 +398,6 @@ function DesktopInfoPanel({
           <Eye className="w-5 h-5 text-amber-500" />
           <span className="font-medium">{(material.view_count ?? 0).toLocaleString()}</span>
           <span className="text-sm text-stone-400">浏览</span>
-        </div>
-        <div className="flex items-center gap-2 text-stone-600">
-          <Heart className="w-5 h-5 text-amber-500" />
-          <span className="font-medium">{likeCount.toLocaleString()}</span>
-          <span className="text-sm text-stone-400">点赞</span>
         </div>
         <div className="flex items-center gap-2 text-stone-600">
           <Download className="w-5 h-5 text-amber-500" />
@@ -490,17 +463,7 @@ function DesktopInfoPanel({
         </div>
       </div>
 
-      {/* 点赞按钮 */}
-      <LikeButton
-        isLiked={isLiked}
-        likeCount={likeCount}
-        isLoading={isLikeLoading}
-        onToggle={onToggleLike}
-        size="lg"
-        className="w-full"
-      />
-
-      {/* 反应按钮 */}
+      {/* 反应/反馈按钮 */}
       <DesktopReactionSection materialId={material.id} />
     </div>
   );
@@ -528,10 +491,6 @@ function DesktopReactionSection({ materialId }: { materialId: number }) {
 // 移动端信息面板
 function MobileInfoPanel({
   material,
-  isLiked,
-  likeCount,
-  isLikeLoading,
-  onToggleLike,
   uploaderName,
   uploaderAvatar,
 }: InfoPanelProps) {
@@ -548,25 +507,12 @@ function MobileInfoPanel({
         <h2 className="text-lg font-bold text-stone-800">{material.title}</h2>
       </div>
 
-      {/* 统计信息和点赞按钮 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1 text-stone-600">
-            <Eye className="w-4 h-4 text-amber-500" />
-            <span className="text-sm">{(material.view_count ?? 0).toLocaleString()}</span>
-          </div>
-          <div className="flex items-center gap-1 text-stone-600">
-            <Heart className="w-4 h-4 text-amber-500" />
-            <span className="text-sm">{likeCount.toLocaleString()}</span>
-          </div>
+      {/* 统计信息 */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1 text-stone-600">
+          <Eye className="w-4 h-4 text-amber-500" />
+          <span className="text-sm">{(material.view_count ?? 0).toLocaleString()} 浏览</span>
         </div>
-        <LikeButton
-          isLiked={isLiked}
-          likeCount={likeCount}
-          isLoading={isLikeLoading}
-          onToggle={onToggleLike}
-          size="sm"
-        />
       </div>
 
       {/* 上传者信息 */}
