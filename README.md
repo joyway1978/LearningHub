@@ -31,7 +31,7 @@
 - **智能处理**: 自动生成视频首帧和PDF首页缩略图
 - **浏览功能**: 课件列表、详情查看、缩略图展示、分页加载
 - **搜索筛选**: 支持按标题搜索、按类型筛选(PDF/视频/PPT/Word/Excel)、多种排序(最新/最热/最多点赞)
-- **互动功能**: 点赞、浏览量统计(10分钟内重复浏览去重)
+- **互动功能**: 反馈系统（👍有帮助/👎没帮助/❓有疑问/💡有启发）、浏览量统计(10分钟内重复浏览去重)
 - **响应式设计**: 完美支持桌面和移动设备
 - **启动脚本**: 一键启动/停止前后端服务，支持自定义端口
 
@@ -201,11 +201,17 @@ make migrate
 4. 使用排序按钮切换排序方式（最新/最热/最多点赞）
 5. 点击课件卡片查看详情
 
-### 点赞功能
+### 反馈功能
 
-1. 在课件详情页点击点赞按钮
-2. 再次点击取消点赞
-3. 点赞数会实时更新
+1. 在课件详情页点击反馈按钮表达你的看法
+2. 支持四种反馈类型：
+   - 👍 有帮助 - 内容对你有帮助
+   - 👎 没帮助 - 内容对你没帮助
+   - ❓ 有疑问 - 对内容有疑问
+   - 💡 有启发 - 内容给了你启发
+3. 再次点击同一按钮可以取消反馈
+4. 点击不同按钮可以切换反馈类型
+5. 反馈数会实时更新
 
 ## 📁 项目结构
 
@@ -246,7 +252,8 @@ learn_ai_hub/
 │   │   │   ├── ui/            # UI基础组件
 │   │   │   ├── MaterialCard.tsx
 │   │   │   ├── MaterialFilters.tsx
-│   │   │   ├── LikeButton.tsx
+│   │   │   ├── LikeButton.tsx       # 点赞按钮（已弃用，保留供参考）
+│   │   │   ├── ReactionBar.tsx      # 反馈功能组件
 │   │   │   └── VideoPlayer.tsx
 │   │   ├── hooks/             # 自定义Hooks
 │   │   │   ├── useMaterials.ts
@@ -292,7 +299,8 @@ learn_ai_hub/
 | `/api/v1/materials/{id}` | GET | 获取课件详情 |
 | `/api/v1/materials/{id}` | PUT | 更新课件 |
 | `/api/v1/materials/{id}` | DELETE | 删除课件 |
-| `/api/v1/materials/{id}/like` | POST | 点赞/取消点赞 |
+| `/api/v1/materials/{id}/reactions` | POST | 添加反馈 |
+| `/api/v1/materials/{id}/reactions` | DELETE | 移除反馈 |
 | `/api/v1/materials/{id}/view` | POST | 记录浏览 |
 | `/api/v1/upload` | POST | 上传文件 |
 | `/api/v1/upload/status/{id}` | GET | 查询上传状态 |
@@ -321,9 +329,19 @@ npm test
 
 测试覆盖:
 - UI组件（Button、Input）
-- 业务组件（MaterialCard、LikeButton）
+- 业务组件（MaterialCard、ReactionBar）
 - 自定义Hooks（useMaterials、useUpload、useMaterialDetail）
 - 工具函数（api、auth、utils）
+
+### E2E测试
+
+```bash
+cd frontend
+npx playwright test
+```
+
+测试覆盖:
+- 反馈功能（添加/移除/切换/持久化）
 
 ## 🔧 环境变量
 
@@ -409,6 +427,12 @@ alembic upgrade head
 
 ## 🐛 最近更新
 
+### v1.3.0 (2024-04)
+- ✅ 新增课件反馈系统，支持四种反馈类型（👍有帮助/👎没帮助/❓有疑问/💡有启发）
+- ✅ 移除重复的点赞按钮，简化交互逻辑
+- ✅ 添加 Playwright E2E 测试套件，覆盖反馈功能
+- ✅ 优化反馈按钮视觉设计，使用琥珀色主题突出显示
+
 ### v1.2.0 (2024-03)
 - ✅ 添加 Office 文件（PPT、Word、Excel）上传和预览支持
 - ✅ 集成 LibreOffice 自动转换 Office 文件为 PDF
@@ -423,7 +447,7 @@ alembic upgrade head
 - ✅ 用户注册、登录、JWT认证
 - ✅ 课件上传（视频/PDF/Office）
 - ✅ 课件浏览、搜索、筛选、排序
-- ✅ 点赞功能
+- ✅ 反馈系统
 - ✅ 响应式设计
 - ✅ Docker 部署支持
 
